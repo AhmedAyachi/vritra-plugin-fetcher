@@ -1,8 +1,19 @@
 package com.ahmedayachi.fetcher;
 
+import com.ahmedayachi.fetcher.Downloader;
+import com.ahmedayachi.fetcher.Uploader;
 import org.apache.cordova.*;
+import android.content.Context;
 import org.json.JSONArray;
+import org.json.JSONObject;
 import org.json.JSONException;
+import android.content.res.Resources;
+import java.util.Random;
+import androidx.work.WorkRequest;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
+import androidx.work.Data;
+import java.util.StringTokenizer;
 
 
 public class Fetcher extends CordovaPlugin{
@@ -43,11 +54,11 @@ public class Fetcher extends CordovaPlugin{
             data.putString("callbackRef",ref);
             data.putString("params",params.toString());
             try{
-                WebView.callbacks.put(ref,callbackContext);
+                Fetcher.callbacks.put(ref,callbackContext);
             }
             catch(JSONException exception){}
             final WorkRequest request=new OneTimeWorkRequest.Builder(method.equals("download")?Downloader.class:Uploader.class).setInputData(data.build()).build();
-            WorkManager.getInstance(WebView.context).enqueue(request);   
+            WorkManager.getInstance(Fetcher.context).enqueue(request);   
         }
     }
 
