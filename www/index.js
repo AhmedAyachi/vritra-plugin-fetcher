@@ -2,7 +2,12 @@ const exec=require("cordova/exec");
 
 
 module.exports={
-    coolAlert:(message)=>{
-        exec(alert,alert,"Template","coolAlert",[message]);
+    download:(params)=>{
+        const {onProgress,onFail}=params;
+        exec(onProgress,onFail,"WebView","download",[params]);
+    },
+    upload:(params)=>{
+        const {onProgress,onFail}=params;
+        exec(onProgress,onFail,"WebView","upload",[params]);
     },
 };

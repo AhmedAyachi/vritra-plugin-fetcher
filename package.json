@@ -1,11 +1,11 @@
 {
-  "name": "cordova-plugin-template",
+  "name": "cordova-plugin-fetcher",
   "version": "1.0.0",
   "main": "www/index.js",
   "types": "index.d.ts",
-  "description": "cordova custom plugin template",
+  "description": "cordova custom plugin fetcher",
   "cordova": {
-    "id": "cordova-plugin-template",
+    "id": "cordova-plugin-fetcher",
     "platforms": [
       "android"
     ]
