@@ -22,7 +22,7 @@ interface Fetcher{
         files:{
             path:String,
             type?:String,
-            formData?:{key:String},
+            formData?:Object,
         }[],
         onProgress(info:{
             progress:Number,
