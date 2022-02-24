@@ -86,13 +86,17 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks{
                 fileParts.add(filePart);
             }
             
+            final Map<String,RequestBody> bodymap=new HashMap<String,RequestBody>();
             final JSONObject body=params.optJSONObject("body");
-            final Map<String,RequestBody> bodymap=new HashMap<String,RequestBody>(); 
-            final JSONArray keys=body.names();
-            final int keyslength=keys.length();
-            for(int i=0;i<keyslength;i++){
-                final String key=keys.optString(i);
-                bodymap.put(key,RequestBody.create(MultipartBody.FORM,body.optString(key)));
+            if(body!=null){
+                final JSONArray keys=body.names();
+                if(keys!=null){
+                    final int keyslength=keys.length();
+                    for(int i=0;i<keyslength;i++){
+                        final String key=keys.optString(i);
+                        bodymap.put(key,RequestBody.create(MultipartBody.FORM,body.optString(key)));
+                    }
+                }
             }
             final Retrofit client=UploaderClient.getClient(params.optString("url"));
             final UploadAPI api=client.create(UploadAPI.class);
