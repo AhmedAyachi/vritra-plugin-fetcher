@@ -12,12 +12,13 @@ import java.io.IOException;
 
 
 public class ProgressRequest extends RequestBody{
-    private File file;
-    private String mPath;
-    private UploadCallbacks listener;
-    private String type;
-    int index,length=1;
 
+    private File file;
+    private String type;
+    private Boolean autoDelete=false;
+    int index,length=1;
+    private UploadCallbacks listener;
+    
     private static final int DEFAULT_BUFFER_SIZE=2048;
     public ProgressRequest(String type,File file,UploadCallbacks listener,int index,int length){
         this.type=type;
@@ -29,7 +30,7 @@ public class ProgressRequest extends RequestBody{
     
     @Override
     public MediaType contentType(){
-        return MediaType.parse(type+"/*");
+        return MediaType.parse(type.contains("/")?type:type+"/*");
     }
     
     @Override
@@ -39,40 +40,27 @@ public class ProgressRequest extends RequestBody{
     
     @Override
     public void writeTo(BufferedSink sink) throws IOException{
-        long fileLength=file.length();
-        byte[] buffer=new byte[DEFAULT_BUFFER_SIZE];
+        final byte[] buffer=new byte[DEFAULT_BUFFER_SIZE];
         final FileInputStream inputstream=new FileInputStream(file);
         long uploaded=0;
         try{
             int read;
             final Handler handler=new Handler(Looper.getMainLooper());
+            final long fileSize=file.length();
+            final double unit=100/length;
             while((read=inputstream.read(buffer))!=-1){
-                handler.post(new ProgressUpdater(uploaded,fileLength,index,length));
+                final int progress=(int)((index*unit)+(unit*uploaded/fileSize));
+                handler.post(new Runnable(){
+                    public void run(){
+                        listener.onProgress(progress);            
+                    }
+                });
                 uploaded+=read;
                 sink.write(buffer,0,read);
             }
         }
         finally{
             inputstream.close();
-        }
-    }
-    
-    private class ProgressUpdater implements Runnable{
-        private long uploaded;
-        private long total;
-        private int index,length;
-        public ProgressUpdater(long uploaded, long total,int index,int length){
-            this.uploaded=uploaded;
-            this.total=total;
-            this.index=index;
-            this.length=length;
-        }
-
-        @Override
-        public void run() {
-            final double unit=100/this.length;
-            final int progress=(int)((this.index*unit)+(unit*this.uploaded/this.total));
-            listener.onProgress(progress);            
         }
     }
 

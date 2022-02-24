@@ -16,13 +16,14 @@ interface Fetcher{
     }):void;
     upload(params:{
         url:string,
-        body?:Object,
-        toast?:String,
         encoding:"form-data",
+        body?:Object,
+        newFileNameKey?:String,
+        toast?:String,
         files:{
             path:String,
             type?:String,
-            formData?:Object,
+            newName?:String,
         }[],
         onProgress(info:{
             progress:Number,

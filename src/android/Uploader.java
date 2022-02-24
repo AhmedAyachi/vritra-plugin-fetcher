@@ -24,11 +24,14 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
+import java.util.Map;
 import android.os.Build;
 import android.net.Uri;
 import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import retrofit2.Retrofit;
@@ -74,33 +77,26 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks{
         final JSONArray files=params.optJSONArray("files");
         final ArrayList<MultipartBody.Part> fileParts=new ArrayList<MultipartBody.Part>(1);
         try{
-            final int length=files.length();
-            for(int i=0;i<length;i++){
+            final int fileslength=files.length();
+            for(int i=0;i<fileslength;i++){
                 final JSONObject props=files.optJSONObject(i);
                 final File file=new File(FileUtils.getPath(Fetcher.context,Uri.parse(props.optString("path"))));
-                final ProgressRequest fileRequest=new ProgressRequest(props.optString("type","*"),file,this,i,length);
-                String key=null,value=null;
-                final JSONObject formData=props.optJSONObject("formData");
-                if(formData!=null){
-                    final JSONArray keys=formData.names();
-                    key=keys.optString(0,null);
-                    if(key!=null){
-                        value=formData.optString(key);
-                    }
-                }
-                if(key==null){
-                    key="filename";
-                    value=file.getName();
-                }
-                final MultipartBody.Part filePart=MultipartBody.Part.createFormData(key,value,fileRequest);
+                final ProgressRequest fileRequest=new ProgressRequest(props.optString("type","*"),file,this,i,fileslength);
+                final MultipartBody.Part filePart=MultipartBody.Part.createFormData(params.optString("newFileNameKey","filename"),props.optString("newName",file.getName()),fileRequest);
                 fileParts.add(filePart);
             }
             
             final JSONObject body=params.optJSONObject("body");
-            final RequestBody dataRequest=RequestBody.create(MediaType.parse("application/json"),body!=null?body.toString():"");
+            final Map<String,RequestBody> bodymap=new HashMap<String,RequestBody>(); 
+            final JSONArray keys=body.names();
+            final int keyslength=keys.length();
+            for(int i=0;i<keyslength;i++){
+                final String key=keys.optString(i);
+                bodymap.put(key,RequestBody.create(MultipartBody.FORM,body.optString(key)));
+            }
             final Retrofit client=UploaderClient.getClient(params.optString("url"));
             final UploadAPI api=client.create(UploadAPI.class);
-            final Call call=api.uploadFile(fileParts,dataRequest);
+            final Call call=api.uploadFile(fileParts,bodymap);
             call.enqueue(new Callback(){
                 @Override
                 public void onResponse(Call call,Response response){
@@ -113,7 +109,7 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks{
                                 }
                             });
                         }
-                        builder.setContentTitle(((length>1)?""+length+" files":"file")+" uploaded successfully");
+                        builder.setContentTitle(((fileslength>1)?""+fileslength+" files":"file")+" uploaded successfully");
                         builder.setContentText(null);
                         builder.setProgress(100,100,false);
                         builder.setOngoing(false);
@@ -150,7 +146,7 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks{
             Uploader.createNotificationChannel();
             id=new Random().nextInt(9999);
             builder=new NotificationCompat.Builder(Fetcher.context,channelId);
-            builder.setContentTitle((length>1)?"Uploading "+length+" files":"Uploading file");
+            builder.setContentTitle((fileslength>1)?"Uploading "+fileslength+" files":"Uploading file");
             builder.setContentText("0%");
             builder.setSmallIcon(Fetcher.context.getApplicationInfo().icon);
             builder.setOngoing(true);
@@ -204,18 +200,14 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks{
         if(code!=null){
             object.put("code",Integer.parseInt(code));
         }
-        if(isSuccessful){
-            object.put("body",response.body());
+        final ResponseBody responsebody=isSuccessful?((ResponseBody)response.body()):response.errorBody();
+        final String query=responsebody.string();
+        try{
+            final JSONObject body=new JSONObject(query);
+            object.put("body",body);
         }
-        else{
-            final String query=response.errorBody().string();
-            try{
-                final JSONObject body=new JSONObject(query);
-                object.put("body",body);
-            }
-            catch(JSONException exception){
-                object.put("body",query);
-            }
+        catch(JSONException exception){
+            object.put("body",query);
         }
         return object;
     }
