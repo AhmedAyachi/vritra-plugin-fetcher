@@ -113,7 +113,7 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks{
                                 }
                             });
                         }
-                        builder.setContentTitle(((fileslength>1)?""+fileslength+" files":"file")+" uploaded successfully");
+                        builder.setContentTitle(((fileslength>1)?""+fileslength+" Files":"File")+" uploaded successfully");
                         builder.setContentText(null);
                         builder.setProgress(100,100,false);
                         //builder.setOngoing(false);
@@ -169,18 +169,20 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks{
 
     @Override
     public void onProgress(int progress){ 
-        final Boolean isFinished=progress>=100;
-        try{
-            output.put("progress",progress);
-            output.put("isFinished",isFinished);
+        //final Boolean isFinished=progress>=100;
+        if(progress<100){
+            try{
+                output.put("progress",progress);
+                output.put("isFinished",false);
+            }
+            catch(Exception exception){}
+            builder.setProgress(100,progress,false);
+            builder.setContentText(progress+"%");
+            manager.notify(id,builder.build());
+            final PluginResult result=new PluginResult(PluginResult.Status.OK,output);
+            result.setKeepCallback(true);
+            callback.sendPluginResult(result);
         }
-        catch(Exception exception){}
-        builder.setProgress(100,progress,false);
-        builder.setContentText(progress+"%");
-        manager.notify(id,builder.build());
-        final PluginResult result=new PluginResult(PluginResult.Status.OK,output);
-        result.setKeepCallback(!isFinished);
-        callback.sendPluginResult(result);
     }
     @Override
     public void onError(){
