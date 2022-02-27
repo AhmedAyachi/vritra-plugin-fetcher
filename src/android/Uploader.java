@@ -80,7 +80,7 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks{
             final int fileslength=files.length();
             for(int i=0;i<fileslength;i++){
                 final JSONObject props=files.optJSONObject(i);
-                final File file=new File(FileUtils.getPath(Fetcher.context,Uri.parse(props.optString("path"))));
+                final File file=new File(Uploader.getPath(props.optString("path")));
                 final ProgressRequest fileRequest=new ProgressRequest(props.optString("type","*"),file,this,i,fileslength);
                 final MultipartBody.Part filePart=MultipartBody.Part.createFormData(params.optString("newFileNameKey","filename"),props.optString("newName",file.getName()),fileRequest);
                 fileParts.add(filePart);
@@ -116,7 +116,7 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks{
                         builder.setContentTitle(((fileslength>1)?""+fileslength+" files":"file")+" uploaded successfully");
                         builder.setContentText(null);
                         builder.setProgress(100,100,false);
-                        builder.setOngoing(false);
+                        //builder.setOngoing(false);
                         manager.notify(id,builder.build());
                         try{
                             output.put("progress",100);
@@ -153,7 +153,7 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks{
             builder.setContentTitle((fileslength>1)?"Uploading "+fileslength+" files":"Uploading file");
             builder.setContentText("0%");
             builder.setSmallIcon(Fetcher.context.getApplicationInfo().icon);
-            builder.setOngoing(true);
+            //builder.setOngoing(true);
             builder.setOnlyAlertOnce(true);
             builder.setProgress(100,0,false);
             manager.notify(id,builder.build());
@@ -215,6 +215,20 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks{
         }
         return object;
     }
+
+    static private String getPath(String string){
+        String path="";
+        final String prefix="file:///";
+        if(string.startsWith(prefix)){
+            path=string;
+        }
+        else{
+            path=prefix+string;
+        }
+        path=FileUtils.getPath(Fetcher.context,Uri.parse(path));
+        return path;
+    }
+
     static private void createNotificationChannel(){
         if((!channelCreated)&&(Build.VERSION.SDK_INT>=Build.VERSION_CODES.O)){
             int importance=NotificationManager.IMPORTANCE_HIGH;
