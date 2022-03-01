@@ -25,6 +25,7 @@ interface Fetcher{
             type?:String,
             newName?:String,
         }[],
+        trackEachFile:Boolean,
         onProgress(info:{
             progress:Number,
             isFinished:Boolean,

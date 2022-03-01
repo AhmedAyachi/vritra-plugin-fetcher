@@ -16,16 +16,13 @@ public class ProgressRequest extends RequestBody{
     private File file;
     private String type;
     private Boolean autoDelete=false;
-    int index,length=1;
     private UploadCallbacks listener;
     
-    private static final int DEFAULT_BUFFER_SIZE=2048;
-    public ProgressRequest(String type,File file,UploadCallbacks listener,int index,int length){
+    private static final int bufferSize=2048;
+    public ProgressRequest(UploadCallbacks listener,String type,File file){
         this.type=type;
         this.file=file;
         this.listener=listener;
-        this.index=index;
-        this.length=length;
     }
     
     @Override
@@ -40,24 +37,20 @@ public class ProgressRequest extends RequestBody{
     
     @Override
     public void writeTo(BufferedSink sink) throws IOException{
-        final byte[] buffer=new byte[DEFAULT_BUFFER_SIZE];
+        final byte[] buffer=new byte[bufferSize];
         final FileInputStream inputstream=new FileInputStream(file);
         long uploaded=0;
+        listener.onFileStart(file);
         try{
             int read;
-            final Handler handler=new Handler(Looper.getMainLooper());
             final long fileSize=file.length();
-            final double unit=100/length;
             while((read=inputstream.read(buffer))!=-1){
-                final int progress=(int)((index*unit)+(unit*uploaded/fileSize));
-                handler.post(new Runnable(){
-                    public void run(){
-                        listener.onProgress(progress);            
-                    }
-                });
+                final int progress=(int)(100*uploaded/fileSize);
+                listener.onFileProgress(progress);
                 uploaded+=read;
                 sink.write(buffer,0,read);
             }
+            listener.onFileFinish(file);
         }
         finally{
             inputstream.close();
@@ -65,8 +58,9 @@ public class ProgressRequest extends RequestBody{
     }
 
     public interface UploadCallbacks{
-        void onProgress(int progress);
-        void onError();
-        void onFinish();
+        void onFileStart(File file);
+        void onFileProgress(int progress);
+        void onFileFinish(File file);
+        void onFileError();
     }
 }

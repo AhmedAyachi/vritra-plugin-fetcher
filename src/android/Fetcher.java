@@ -34,25 +34,25 @@ public class Fetcher extends CordovaPlugin{
     @Override
     public boolean execute(String action,JSONArray args,CallbackContext callbackContext) throws JSONException{
         if(action.equals("download")){
-            JSONObject params=args.getJSONObject(0);
-            this.fetch("download",params,callbackContext);
+            JSONObject props=args.getJSONObject(0);
+            this.fetch("download",props,callbackContext);
             return true;
         }
         else if(action.equals("upload")){
-            JSONObject params=args.getJSONObject(0);
-            this.fetch("upload",params,callbackContext);
+            JSONObject props=args.getJSONObject(0);
+            this.fetch("upload",props,callbackContext);
             return true;
         }
         return false;
     }
 
-    private void fetch(String method,JSONObject params,CallbackContext callbackContext){
-        final String url=params.optString("url",null);
+    private void fetch(String method,JSONObject props,CallbackContext callbackContext){
+        final String url=props.optString("url",null);
         if(url!=null){
             final String ref=Integer.toString(new Random().nextInt());
             final Data.Builder data=new Data.Builder();
             data.putString("callbackRef",ref);
-            data.putString("params",params.toString());
+            data.putString("props",props.toString());
             try{
                 Fetcher.callbacks.put(ref,callbackContext);
             }
