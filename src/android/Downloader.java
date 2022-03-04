@@ -33,8 +33,8 @@ public class Downloader extends Worker{
         if(callbackRef!=null){
             try{
                 final CallbackContext callback=(CallbackContext)Fetcher.callbacks.opt(callbackRef);
-                final JSONObject params=new JSONObject(data.getString("params"));
-                this.download(params,callback);
+                final JSONObject props=new JSONObject(data.getString("props"));
+                this.download(props,callback);
                 isFulfilled=true;
                 Fetcher.callbacks.remove(callbackRef);
             }
@@ -44,16 +44,16 @@ public class Downloader extends Worker{
         return isFulfilled?Result.success():Result.failure();
     }
 
-    private void download(JSONObject params,CallbackContext callback){
+    private void download(JSONObject props,CallbackContext callback){
         try{
-            final String url=params.optString("url");
+            final String url=props.optString("url");
             final DownloadManager downloader=(DownloadManager)Fetcher.cordova.getActivity().getSystemService(Context.DOWNLOAD_SERVICE);
             final Uri uri=Uri.parse(url/* .replaceAll(" ","%20") */);
             final DownloadManager.Request request=new DownloadManager.Request(uri);
             final String extension=Fetcher.getExtension(url);
-            final String filename=params.optString("filename",Fetcher.getAppName().replaceAll(" ",""))+"."+extension;
+            final String filename=props.optString("filename",Fetcher.getAppName().replaceAll(" ",""))+"."+extension;
             request.setTitle(filename);
-            final String type=params.optString("type");
+            final String type=props.optString("type");
             if(type!=null){
                 request.setMimeType(type);
             }
@@ -62,7 +62,7 @@ public class Downloader extends Worker{
             }
             request.setDescription("Downloding");
             request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-            final String location=params.optString("location",null);
+            final String location=props.optString("location",null);
             if(location!=null){
                 request.setDestinationUri(Uri.parse(location+"/"+filename));
             }
@@ -103,7 +103,7 @@ public class Downloader extends Worker{
                             cursor.close();
                             Thread.sleep(100);
                         }
-                        final String toast=params.optString("toast",null);
+                        final String toast=props.optString("toast",null);
                         if(toast!=null){
                             Fetcher.cordova.getActivity().runOnUiThread(new Runnable(){
                                 public void run(){
