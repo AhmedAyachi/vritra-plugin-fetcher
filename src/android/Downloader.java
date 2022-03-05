@@ -91,23 +91,18 @@ public class Downloader extends Worker{
                                 final long total=cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
                                 if(total>0){
                                     final int downloaded=cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
-                                    final double progress=(downloaded/total)*100f;
+                                    final double progress=(double)(100*downloaded)/total;
                                     isFinished=progress>=100;
-                                    if(progress<100){
-                                        params.put("progress",progress);
-                                        params.put("isFinished",isFinished);
-                                        final PluginResult result=new PluginResult(PluginResult.Status.OK,params);
-                                        result.setKeepCallback(true);
-                                        callback.sendPluginResult(result);
-                                    }
+                                    params.put("progress",progress);
+                                    params.put("isFinished",isFinished);
+                                    final PluginResult result=new PluginResult(PluginResult.Status.OK,params);
+                                    result.setKeepCallback(!isFinished);
+                                    callback.sendPluginResult(result);
                                 }
                             }
                             cursor.close();
                             Thread.sleep(100);
                         }
-                        params.put("progress",100);
-                        params.put("isFinished",isFinished);
-                        callback.success(params);
 
                         final String toast=props.optString("toast",null);
                         if(toast!=null){
