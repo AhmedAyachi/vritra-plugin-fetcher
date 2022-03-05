@@ -8,6 +8,7 @@ interface Fetcher{
         filename?:String,
         type?:String,
         toast?:String,
+        overwrite?:Boolean,
         onProgress(info:{
             progress:Number,
             isFinished:Boolean,

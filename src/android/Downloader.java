@@ -1,5 +1,7 @@
 package com.ahmedayachi.fetcher;
 
+import java.io.File;
+
 import com.ahmedayachi.fetcher.Fetcher;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
@@ -53,13 +55,8 @@ public class Downloader extends Worker{
             final String extension=Fetcher.getExtension(url);
             final String filename=props.optString("filename",Fetcher.getAppName().replaceAll(" ",""))+"."+extension;
             request.setTitle(filename);
-            final String type=props.optString("type");
-            if(type!=null){
-                request.setMimeType(type);
-            }
-            else{
-                request.setMimeType(extension);
-            }
+            final String type=props.optString("type",extension);
+            request.setMimeType(type);
             request.setDescription("Downloding");
             request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
             final String location=props.optString("location",null);
@@ -70,16 +67,19 @@ public class Downloader extends Worker{
                 request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,"/"+filename);
             }
             request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI|DownloadManager.Request.NETWORK_MOBILE);
-            
-            
+            final Boolean overwrite=props.optBoolean("overwrite",false);
+            if(overwrite){
+                Downloader.deleteExistingFile(location,filename);
+            }
+
             final long downloadId=downloader.enqueue(request);
-            final JSONObject args=new JSONObject();
+            final JSONObject params=new JSONObject();
             try{
-                args.put("progress",0);
-                args.put("isFinished",false);
+                params.put("progress",0);
+                params.put("isFinished",false);
             }
             catch(Exception exception){};
-            new Thread(new Runnable() {
+            new Thread(new Runnable(){
                 public void run(){
                     try{
                         Boolean isFinished=false;
@@ -93,16 +93,22 @@ public class Downloader extends Worker{
                                     final int downloaded=cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
                                     final double progress=(downloaded/total)*100f;
                                     isFinished=progress>=100;
-                                    args.put("progress",progress);
-                                    args.put("isFinished",isFinished);
-                                    final PluginResult result=new PluginResult(PluginResult.Status.OK,args);
-                                    result.setKeepCallback(!isFinished);
-                                    callback.sendPluginResult(result);
+                                    if(progress<100){
+                                        params.put("progress",progress);
+                                        params.put("isFinished",isFinished);
+                                        final PluginResult result=new PluginResult(PluginResult.Status.OK,params);
+                                        result.setKeepCallback(true);
+                                        callback.sendPluginResult(result);
+                                    }
                                 }
                             }
                             cursor.close();
                             Thread.sleep(100);
                         }
+                        params.put("progress",100);
+                        params.put("isFinished",isFinished);
+                        callback.success(params);
+
                         final String toast=props.optString("toast",null);
                         if(toast!=null){
                             Fetcher.cordova.getActivity().runOnUiThread(new Runnable(){
@@ -121,9 +127,9 @@ public class Downloader extends Worker{
                 @Override
                 public void onReceive(Context context,Intent intent){
                     try{
-                        args.put("isFinished",true);
-                        args.put("progress",100);
-                        callback.success(args);
+                        params.put("isFinished",true);
+                        params.put("progress",100);
+                        callback.success(params);
                     }
                     catch(Exception exception){}
                 }
@@ -131,6 +137,19 @@ public class Downloader extends Worker{
         }
         catch(Exception exception){
             callback.error(exception.getMessage());
+        }
+    }
+
+    static void deleteExistingFile(String location,String filename){
+        if(location==null){
+            location=Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS;
+        }
+        if(location.startsWith("file://")){
+            location=location.substring(7);
+        }
+        final File file=new File(location+"/"+filename);
+        if(file.exists()){
+            file.delete();
         }
     }
 }
