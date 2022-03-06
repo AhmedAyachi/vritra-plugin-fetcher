@@ -50,7 +50,7 @@ public class Downloader extends Worker{
         try{
             final String url=props.optString("url");
             final DownloadManager downloader=(DownloadManager)Fetcher.cordova.getActivity().getSystemService(Context.DOWNLOAD_SERVICE);
-            final Uri uri=Uri.parse(url/* .replaceAll(" ","%20") */);
+            final Uri uri=Uri.parse(url);
             final DownloadManager.Request request=new DownloadManager.Request(uri);
             final String extension=Fetcher.getExtension(url);
             final String filename=props.optString("filename",Fetcher.getAppName().replaceAll(" ",""))+"."+extension;
@@ -59,6 +59,11 @@ public class Downloader extends Worker{
             request.setMimeType(type);
             request.setDescription("Downloding");
             final Boolean notify=props.optBoolean("notify",true);
+            Fetcher.cordova.getActivity().runOnUiThread(new Runnable(){
+                public void run(){
+                    Toast.makeText(Fetcher.context,Boolean.toString(notify),Toast.LENGTH_SHORT).show();
+                }
+            });
             request.setNotificationVisibility(notify?DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED:DownloadManager.Request.VISIBILITY_HIDDEN);
             final String location=props.optString("location",null);
             if(location!=null){
