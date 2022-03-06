@@ -59,11 +59,6 @@ public class Downloader extends Worker{
             request.setMimeType(type);
             request.setDescription("Downloding");
             final Boolean notify=props.optBoolean("notify",true);
-            Fetcher.cordova.getActivity().runOnUiThread(new Runnable(){
-                public void run(){
-                    Toast.makeText(Fetcher.context,Boolean.toString(notify),Toast.LENGTH_SHORT).show();
-                }
-            });
             request.setNotificationVisibility(notify?DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED:DownloadManager.Request.VISIBILITY_HIDDEN);
             final String location=props.optString("location",null);
             if(location!=null){
