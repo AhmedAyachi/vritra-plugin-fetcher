@@ -9,6 +9,7 @@ interface Fetcher{
         type?:String,
         toast?:String,
         overwrite?:Boolean,
+        notify?:Boolean,
         onProgress(info:{
             progress:Number,
             isFinished:Boolean,

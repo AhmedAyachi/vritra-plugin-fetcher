@@ -58,7 +58,8 @@ public class Downloader extends Worker{
             final String type=props.optString("type",extension);
             request.setMimeType(type);
             request.setDescription("Downloding");
-            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            final Boolean notify=props.optBoolean("notify",true);
+            request.setNotificationVisibility(notify?DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED:DownloadManager.Request.VISIBILITY_HIDDEN);
             final String location=props.optString("location",null);
             if(location!=null){
                 request.setDestinationUri(Uri.parse(location+"/"+filename));
