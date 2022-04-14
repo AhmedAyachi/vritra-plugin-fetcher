@@ -33,9 +33,21 @@
         <source-file src="src/android/Downloader.java" target-dir="src/com/ahmedayachi/fetcher/Fetcher"/>
         <framework src="src/android/build.gradle" custom="true" type="gradleReference"/>
     </platform>
+
+    <platform name="ios">
+        <config-file parent="/*" target="config.xml">
+            <feature name="Fetcher">
+                <param name="ios-package" value="Fetcher" onload="false"/>
+            </feature>
+        </config-file>
+        <source-file src="src/ios/FetcherPlugin.swift"/>
+        <source-file src="src/ios/Fetcher.swift"/>
+    </platform>
+
     <platform name="browser">
         <js-module src="src/browser/Fetcher.js" name="browserFetcher">
             <clobbers target="Fetcher"/>
         </js-module>
     </platform>
+
 </plugin>
