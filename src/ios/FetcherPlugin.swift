@@ -145,10 +145,14 @@ class FetcherPlugin:CDVPlugin {
             self.commandDelegate.send(result,callbackId:command.callbackId);
         }
     }
-}
-
-extension String:LocalizedError {
-    public var errorDescription:String?{
-        return self; 
+    
+    class Error:LocalizedError {
+        private var message:String="";
+        init(_ message:String){
+            self.message=message;
+        }
+        public var errorDescription:String?{
+            return self.message; 
+        }
     }
 }
