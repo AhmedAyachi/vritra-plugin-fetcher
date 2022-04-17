@@ -5,7 +5,7 @@ interface Fetcher{
     download(params:{
         url:String
         location?:String,
-        filename?:String,
+        filename?:String,//without extension
         type?:String,
         toast?:String,
         overwrite?:Boolean,
