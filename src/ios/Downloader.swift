@@ -1,6 +1,6 @@
 
 
-class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate{
+class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate,UNUserNotificationCenterDelegate{
     
     static let appname=Bundle.main.infoDictionary?["CFBundleDisplayName" as String] as? String ?? "";
     var props:[AnyHashable:Any]=[:];
@@ -45,12 +45,6 @@ class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate{
             )
         }
     }
-
-    private func setFileName(){
-        if let name=props["filename"] as? String{
-            self.filename=name;
-        }
-    }
     
     func urlSession(_ session:URLSession,downloadTask:URLSessionDownloadTask,didWriteData:Int64,totalBytesWritten:Int64,totalBytesExpectedToWrite:Int64){
         if !(onProgress==nil){
@@ -65,6 +59,10 @@ class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate{
     func urlSession(_ session:URLSession,downloadTask task:URLSessionDownloadTask,didFinishDownloadingTo location:URL){
         do{
             try self.saveFile(location,task,session);
+            let notify=props["notify"] as? Bool ?? true;
+            if(notify){
+                self.notify();
+            }
             if !(onProgress==nil){
                 let params:[String:Any]=[
                     "isFinished":true,
@@ -89,7 +87,7 @@ class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate{
             let filemanager=FileManager.default;
             let basename:String=props["filename"] as? String ?? Downloader.appname;
             let ext:String=Downloader.getExtension(response);
-            var filename="\(basename).\(ext)";
+            filename="\(basename).\(ext)";
             var destination=location.appendingPathComponent(filename);
             if(filemanager.fileExists(atPath:destination.path)){
                 let overwrite=props["overwrite"] as? Bool ?? false;
@@ -104,12 +102,35 @@ class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate{
             try filemanager.moveItem(at:path,to:destination);
         }
         else{
-            throw Fetcher.Error("Request Response is undefined");
+            throw Fetcher.Error("\(self.location==nil ?"location":"Request Response") is undefined");
         }
     }
 
     private func notify(){
+        Downloader.askPermissions({[self] granted,data in
+            if(granted){
+                let content=UNMutableNotificationContent();
+                content.title=Downloader.appname;
+                content.subtitle=filename;
+                content.body="Download complete.";
+                let request=UNNotificationRequest(
+                    identifier:"fetcherdownload",
+                    content:content,
+                    trigger:nil
+                );
+                let center=UNUserNotificationCenter.current();
+                center.delegate=self;
+                center.add(request,withCompletionHandler:{[self] error in
+                    if !(error==nil){
+                        onFail?(error!.localizedDescription);
+                    }
+                });
+            }
+        });
+    }
 
+    func userNotificationCenter(_ center: UNUserNotificationCenter,willPresent notification: UNNotification,withCompletionHandler completionHandler: (UNNotificationPresentationOptions)->Void){
+        completionHandler([.alert,.badge,.sound]);
     }
 
     static func getURLExtension(_ url:URL)->String{
@@ -139,5 +160,19 @@ class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate{
             ext=getExtension(url.lastPathComponent,".");
         }
         return ext.isEmpty ? "tmp":ext;
+    }
+
+    static func askPermissions(_ onGranted:@escaping(Bool,Any)->Void){
+        let center=UNUserNotificationCenter.current();
+        center.requestAuthorization(options:[.alert,.sound,.badge],completionHandler:{granted,error  in
+            if(granted){
+                center.getNotificationSettings(completionHandler:{ settings in
+                    onGranted(granted,settings);
+                });
+            }
+            else{
+                onGranted(granted,error ?? false);
+            }
+        });
     }
 }
