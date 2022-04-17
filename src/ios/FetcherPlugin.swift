@@ -12,7 +12,7 @@ class FetcherPlugin:CDVPlugin {
             if(!(result==nil)){
                 result!.keepCallback=keep;   
             }
-            self.commandDelegate.send(result,callbackId:command.callbackId);
+            self.commandDelegate?.send(result,callbackId:command.callbackId);
         }
     }
     func error(_ command:CDVInvokedUrlCommand,_ message:[AnyHashable:Any]?,_ keep:NSNumber=false){
@@ -24,7 +24,7 @@ class FetcherPlugin:CDVPlugin {
             if(!(result==nil)){
                 result!.keepCallback=keep;   
             }
-            self.commandDelegate.send(result,callbackId:command.callbackId);
+            self.commandDelegate?.send(result,callbackId:command.callbackId);
         }
     }
 
@@ -38,7 +38,7 @@ class FetcherPlugin:CDVPlugin {
             if(!(result==nil)){
                 result!.keepCallback=keep;   
             }
-            self.commandDelegate.send(result,callbackId:command.callbackId);
+            self.commandDelegate?.send(result,callbackId:command.callbackId);
         }
     }
     func error(_ command:CDVInvokedUrlCommand,_ message:[Any]?,_ keep:NSNumber=false){
@@ -50,7 +50,7 @@ class FetcherPlugin:CDVPlugin {
             if(!(result==nil)){
                 result!.keepCallback=keep;   
             }
-            self.commandDelegate.send(result,callbackId:command.callbackId);
+            self.commandDelegate?.send(result,callbackId:command.callbackId);
         }
     }
 
@@ -60,14 +60,14 @@ class FetcherPlugin:CDVPlugin {
         if(!(result==nil)){
             result!.keepCallback=keep;   
         }
-        self.commandDelegate.send(result,callbackId:command.callbackId);
+        self.commandDelegate?.send(result,callbackId:command.callbackId);
     }
     func error(_ command:CDVInvokedUrlCommand,_ message:Bool?,_ keep:NSNumber=false){
         let result=CDVPluginResult(status:CDVCommandStatus_ERROR,messageAs:message==nil ?false:message!);
         if(!(result==nil)){
             result!.keepCallback=keep;   
         }
-        self.commandDelegate.send(result,callbackId:command.callbackId);
+        self.commandDelegate?.send(result,callbackId:command.callbackId);
     }
 
     //Number callback
@@ -80,7 +80,7 @@ class FetcherPlugin:CDVPlugin {
             if(!(result==nil)){
                 result!.keepCallback=keep;   
             }
-            self.commandDelegate.send(result,callbackId:command.callbackId);
+            self.commandDelegate?.send(result,callbackId:command.callbackId);
         }
     }
     func error(_ command:CDVInvokedUrlCommand,_ message:Double?,_ keep:NSNumber=false){
@@ -92,7 +92,7 @@ class FetcherPlugin:CDVPlugin {
             if(!(result==nil)){
                 result!.keepCallback=keep;   
             }
-            self.commandDelegate.send(result,callbackId:command.callbackId);
+            self.commandDelegate?.send(result,callbackId:command.callbackId);
         }
     }
     func success(_ command:CDVInvokedUrlCommand,_ message:Int?,_ keep:NSNumber=false){
@@ -104,7 +104,7 @@ class FetcherPlugin:CDVPlugin {
             if(!(result==nil)){
                 result!.keepCallback=keep;   
             }
-            self.commandDelegate.send(result,callbackId:command.callbackId);
+            self.commandDelegate?.send(result,callbackId:command.callbackId);
         }
     }
     func error(_ command:CDVInvokedUrlCommand,_ message:Int?,_ keep:NSNumber=false){
@@ -116,7 +116,7 @@ class FetcherPlugin:CDVPlugin {
             if(!(result==nil)){
                 result!.keepCallback=keep;   
             }
-            self.commandDelegate.send(result,callbackId:command.callbackId);
+            self.commandDelegate?.send(result,callbackId:command.callbackId);
         }
     }
 
@@ -130,7 +130,7 @@ class FetcherPlugin:CDVPlugin {
             if(!(result==nil)){
                 result!.keepCallback=keep;   
             }
-            self.commandDelegate.send(result,callbackId:command.callbackId);
+            self.commandDelegate?.send(result,callbackId:command.callbackId);
         }
     }
     func error(_ command:CDVInvokedUrlCommand,_ message:String?,_ keep:NSNumber=false){
@@ -142,7 +142,7 @@ class FetcherPlugin:CDVPlugin {
             if(!(result==nil)){
                 result!.keepCallback=keep;   
             }
-            self.commandDelegate.send(result,callbackId:command.callbackId);
+            self.commandDelegate?.send(result,callbackId:command.callbackId);
         }
     }
     

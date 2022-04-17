@@ -79,13 +79,13 @@ class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate{
     }
 
     func urlSession(_ session:URLSession,didBecomeInvalidWithError:Error?){
-        if let error=didBecomeInvalidWithError as? Error,!(onFail==nil){
+        if let error=didBecomeInvalidWithError,!(onFail==nil){
             onFail!(error.localizedDescription);
         }
     }
     
     private func saveFile(_ path:URL,_ task:URLSessionDownloadTask,_ session:URLSession)throws{
-        if let location=self.location as? URL,let response=task.response as? URLResponse {
+        if let location=self.location,let response=task.response {
             let filemanager=FileManager.default;
             let basename:String=props["filename"] as? String ?? Downloader.appname;
             let ext:String=Downloader.getExtension(response);
@@ -108,6 +108,10 @@ class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate{
         }
     }
 
+    private func notify(){
+
+    }
+
     static func getURLExtension(_ url:URL)->String{
         let name:String=url.lastPathComponent;
         return Downloader.getExtension(name);
@@ -124,14 +128,14 @@ class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate{
 
     static func getExtension(_ respone:URLResponse)->String{
         var ext="";
-        if let mimetype=respone.mimeType as? String {
+        if let mimetype=respone.mimeType {
             ext=Downloader.getExtension(mimetype,"/");
 
         }
-        if ext.isEmpty,let name=respone.suggestedFilename as? String {
+        if ext.isEmpty,let name=respone.suggestedFilename {
             ext=Downloader.getExtension(name,".");
         }
-        if ext.isEmpty,let url=respone.url as? URL {
+        if ext.isEmpty,let url=respone.url {
             ext=getExtension(url.lastPathComponent,".");
         }
         return ext.isEmpty ? "tmp":ext;
