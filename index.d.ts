@@ -4,14 +4,14 @@ declare const Fetcher:Fetcher;
 interface Fetcher{
     download(params:{
         url:String
-        location?:String,
+        location?:String,//default: android=>Download folder, ios=>Documents folder
         filename?:String,//without extension
-        type?:String,
-        toast?:String,
-        overwrite?:Boolean,
-        notify?:Boolean,
+        type?:String,//spceify filename type,required in some requests
+        toast?:String,//on finish toast message
+        overwrite?:Boolean,//false
+        notify?:Boolean,//true
         onProgress(info:{
-            progress:Number,
+            progress:Number,//0...100
             isFinished:Boolean,
         }):void,
         onFail(message:String):void,

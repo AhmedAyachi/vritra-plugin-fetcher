@@ -3,19 +3,21 @@
 class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate{
     
     static let appname=Bundle.main.infoDictionary?["CFBundleDisplayName" as String] as? String ?? "";
-    let props:[AnyHashable:Any];
-    var location:URL;
+    var props:[AnyHashable:Any]=[:];
+    var location:URL?;
     var filename:String="";
     var onProgress:(([AnyHashable:Any])->Void)?=nil;
     var onFail:((String)->Void)?=nil;
 
     init(_ props:[AnyHashable:Any]){
+        super.init();
         self.props=props;
         setLocation();
     }
 
     func download(onProgress:(([AnyHashable:Any])->Void)?=nil,onFail:((String)->Void)?=nil){
-        if let url=props["url"] as? URL {
+        let link=props["url"] as! String;
+        if let url=URL(string:link) {
             let sessionConfig=URLSessionConfiguration.default;
             let session=URLSession(
                 configuration:sessionConfig,
@@ -31,7 +33,7 @@ class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate{
     }
 
     private func setLocation(){
-        if let path=props["location"] as? String && !path.isEmpty{
+        if let path=props["location"] as? String {
             self.location=URL(fileURLWithPath:path);
         }
         else{
@@ -54,7 +56,7 @@ class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate{
         if !(onProgress==nil){
             let params:[String:Any]=[
                 "isFinished":false,
-                "progress":Double(totalBytesWritten)/Double(totalBytesExpectedToWrite),
+                "progress":100*(Double(totalBytesWritten)/Double(totalBytesExpectedToWrite)),
             ];
             onProgress!(params);
         } 
@@ -66,10 +68,9 @@ class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate{
             if !(onProgress==nil){
                 let params:[String:Any]=[
                     "isFinished":true,
-                    "progress":1,
+                    "progress":100,
                 ];
                 onProgress!(params);
-                print("location:",location.path);
             }
         }
         catch{
@@ -85,21 +86,25 @@ class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate{
     
     private func saveFile(_ path:URL,_ task:URLSessionDownloadTask,_ session:URLSession)throws{
         if let location=self.location as? URL,let response=task.response as? URLResponse {
-            var ext:String=Downloader.getExtension(response);
-            var filename:String=props["filename"] as? String ?? "";
-            if(filename.isEmpty){
-                filename=response.suggestedFilename ?? "\(Downloader.appname).\(ext)";
+            let filemanager=FileManager.default;
+            let basename:String=props["filename"] as? String ?? Downloader.appname;
+            let ext:String=Downloader.getExtension(response);
+            var filename="\(basename).\(ext)";
+            var destination=location.appendingPathComponent(filename);
+            if(filemanager.fileExists(atPath:destination.path)){
+                let overwrite=props["overwrite"] as? Bool ?? false;
+                if(overwrite){
+                   try filemanager.removeItem(at:destination);
+                }
+                else{
+                    filename="\(basename) (\(Int.random(in:0...99999))).\(ext)";
+                    destination=location.appendingPathComponent(filename);
+                }
             }
-            else{
-                filename="\(filename).\(ext)";
-            }
-            
-            let uri=target.appendingPathComponent(filename);
-            try FileManager.default.moveItem(at:path,to:uri);
-            filename=response.suggestedFilename ?? "";
+            try filemanager.moveItem(at:path,to:destination);
         }
         else{
-            self.urlSession(session,didBecomeInvalidWithError:Fetcher.Error("Request Response is undefined"));
+            throw Fetcher.Error("Request Response is undefined");
         }
     }
 
@@ -109,8 +114,8 @@ class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate{
     }
 
     static func getExtension(_ path:String,_ separator:String=".")->String{
-        let parts=path.split(separator:separator);
-        var ext=parts.count>1 ? String(parts.last) :"";
+        let parts=path.split(separator:separator.first ?? ".");
+        var ext=parts.count>1 ? String(parts.last!) :"";
         if(ext.isEmpty){
             ext="tmp";
         }
@@ -119,7 +124,7 @@ class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate{
 
     static func getExtension(_ respone:URLResponse)->String{
         var ext="";
-        if let mimetype=respone.mimetype as? String {
+        if let mimetype=respone.mimeType as? String {
             ext=Downloader.getExtension(mimetype,"/");
 
         }

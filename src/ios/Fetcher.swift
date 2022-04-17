@@ -5,13 +5,16 @@ class Fetcher:FetcherPlugin {
 
     @objc(download:)
     func download(command:CDVInvokedUrlCommand){
-        if let params=command.arguments[0] as? [AnyHashable:Any]{
+        if let props=command.arguments[0] as? [AnyHashable:Any]{
             do{
-                if let link=params["url"] as? String{
-                    let downloader=Downloader(params);
+                if let link=props["url"] as? String {
+                    let downloader=Downloader(props);
                     downloader.download(
                         onProgress:{[self] params in 
                             let isFinished=params["isFinished"] as? Bool ?? true;
+                            if isFinished,let toast=props["toast"] as? String {
+                                self.toast(toast);
+                            }
                             self.success(command,params,NSNumber(value:!isFinished));
                         },
                         onFail:{[self] message in
@@ -27,5 +30,15 @@ class Fetcher:FetcherPlugin {
                 self.error(command,error.localizedDescription);
             }
         };
+    }
+
+    func toast(_ message:String){
+        let alert=UIAlertController(title:"",message:message,preferredStyle:.actionSheet);
+        DispatchQueue.main.asyncAfter(deadline:DispatchTime.now()+2){
+            alert.dismiss(animated:true);
+        }
+        DispatchQueue.main.async(execute:{
+            self.viewController.present(alert,animated:true);
+        });
     }
 }
