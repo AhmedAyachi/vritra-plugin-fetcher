@@ -6,32 +6,34 @@ class Fetcher:FetcherPlugin {
     @objc(download:)
     func download(command:CDVInvokedUrlCommand){
         if let props=command.arguments[0] as? [AnyHashable:Any]{
-            do{
-                if !((props["url"] as? String)==nil){
-                    let downloader=Downloader(props);
-                    downloader.download(
-                        onProgress:{[self] params in self.onDownloading(command,params,props)},
-                        onFail:{[self] message in
-                            error(command,message);
-                        }
-                    );
+            self.commandDelegate?.run(inBackground:{[self] in
+                do{
+                    if !((props["url"] as? String)==nil){
+                        let downloader=Downloader(props);
+                        downloader.download(
+                            onProgress:{[self] params in self.onDownloading(command,params,props)},
+                            onFail:{[self] message in
+                                error(command,message);
+                            }
+                        );
+                    }
+                    else{
+                        throw Fetcher.Error("url attribute is required");
+                    }
                 }
-                else{
-                    throw Fetcher.Error("url attribute is required");
+                catch{
+                    self.error(command,error.localizedDescription);
                 }
-            }
-            catch{
-                self.error(command,error.localizedDescription);
-            }
+            });
         };
     }
 
     private func toast(_ message:String){
-        let alert=UIAlertController(title:"",message:message,preferredStyle:.actionSheet);
-        DispatchQueue.main.asyncAfter(deadline:DispatchTime.now()+2){
-            alert.dismiss(animated:true);
-        }
         DispatchQueue.main.async(execute:{
+            let alert=UIAlertController(title:"",message:message,preferredStyle:.actionSheet);
+            DispatchQueue.main.asyncAfter(deadline:DispatchTime.now()+2){
+                alert.dismiss(animated:true);
+            }
             self.viewController.present(alert,animated:true);
         });
     }
