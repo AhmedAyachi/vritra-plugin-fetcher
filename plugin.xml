@@ -42,6 +42,7 @@
         </config-file>
         <source-file src="src/ios/FetcherPlugin.swift"/>
         <source-file src="src/ios/Downloader.swift"/>
+        <source-file src="src/ios/Uploader.swift"/>
         <source-file src="src/ios/Fetcher.swift"/>
     </platform>
 

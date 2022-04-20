@@ -1,13 +1,13 @@
 
 
-class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate,UNUserNotificationCenterDelegate{
+class Downloader:NSObject,FetcherDelegate,URLSessionDelegate,URLSessionDownloadDelegate,UNUserNotificationCenterDelegate{
     
     static let appname=Bundle.main.infoDictionary?["CFBundleDisplayName" as String] as? String ?? "";
     var props:[AnyHashable:Any]=[:];
     var location:URL?;
     var filename:String="";
     var onProgress:(([AnyHashable:Any])->Void)?=nil;
-    var onFail:((String)->Void)?=nil;
+    var onFail:(([AnyHashable:Any])->Void)?=nil;
 
     init(_ props:[AnyHashable:Any]){
         super.init();
@@ -15,9 +15,8 @@ class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate,UNUserNo
         setLocation();
     }
 
-    func download(onProgress:(([AnyHashable:Any])->Void)?=nil,onFail:((String)->Void)?=nil){
-        let link=props["url"] as! String;
-        if let url=URL(string:link) {
+    func download(onProgress:(([AnyHashable:Any])->Void)?,onFail:(([AnyHashable:Any])->Void)?){
+        if let link=props["url"] as? String,let url=URL(string:link) {
             let sessionConfig=URLSessionConfiguration.default;
             let session=URLSession(
                 configuration:sessionConfig,
@@ -29,6 +28,9 @@ class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate,UNUserNo
             self.onProgress=onProgress;
             self.onFail=onFail;
             task.resume();
+        }
+        else{
+            self.onFail?(["message":"invalid url"]);
         }
     }
 
@@ -77,8 +79,8 @@ class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate,UNUserNo
     }
 
     func urlSession(_ session:URLSession,didBecomeInvalidWithError:Error?){
-        if let error=didBecomeInvalidWithError,!(onFail==nil){
-            onFail!(error.localizedDescription);
+        if let error=didBecomeInvalidWithError{
+            onFail?(["message":error.localizedDescription]);
         }
     }
     
@@ -107,24 +109,20 @@ class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate,UNUserNo
     }
 
     private func notify(){
-        Downloader.askPermissions({[self] granted,data in
-            if(granted){
-                let content=UNMutableNotificationContent();
-                content.title=Downloader.appname;
-                content.subtitle=filename;
-                content.body="Download complete.";
-                let request=UNNotificationRequest(
-                    identifier:"fetcherdownload",
-                    content:content,
-                    trigger:nil
-                );
-                let center=UNUserNotificationCenter.current();
-                center.delegate=self;
-                center.add(request,withCompletionHandler:{[self] error in
-                    if !(error==nil){
-                        onFail?(error!.localizedDescription);
-                    }
-                });
+        let content=UNMutableNotificationContent();
+        content.title=Downloader.appname;
+        content.subtitle=filename;
+        content.body="Download complete.";
+        let request=UNNotificationRequest(
+            identifier:"fetcherdownload",
+            content:content,
+            trigger:nil
+        );
+        let center=UNUserNotificationCenter.current();
+        center.delegate=self;
+        center.add(request,withCompletionHandler:{[self] error in
+            if !(error==nil){
+                onFail?(["message":error!.localizedDescription]);
             }
         });
     }
@@ -160,19 +158,5 @@ class Downloader:NSObject,URLSessionDelegate,URLSessionDownloadDelegate,UNUserNo
             ext=getExtension(url.lastPathComponent,".");
         }
         return ext.isEmpty ? "tmp":ext;
-    }
-
-    static func askPermissions(_ onGranted:@escaping(Bool,Any)->Void){
-        let center=UNUserNotificationCenter.current();
-        center.requestAuthorization(options:[.alert,.sound,.badge],completionHandler:{granted,error  in
-            if(granted){
-                center.getNotificationSettings(completionHandler:{ settings in
-                    onGranted(granted,settings);
-                });
-            }
-            else{
-                onGranted(granted,error ?? false);
-            }
-        });
     }
 }

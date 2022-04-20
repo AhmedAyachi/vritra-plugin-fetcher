@@ -14,7 +14,9 @@ interface Fetcher{
             progress:Number,//0...100
             isFinished:Boolean,
         }):void,
-        onFail(message:String):void,
+        onFail(error:{
+            message:String,
+        }):void,
     }):void;
     upload(params:{
         url:string,
@@ -27,20 +29,20 @@ interface Fetcher{
             type?:String,
             newName?:String,
         }[],
-        trackEachFile:Boolean,
+        trackEachFile:Boolean,//progress for each file or total progress in the notifications
         onProgress(info:{
-            progress:Number,
+            progress:Number,//always the total progress
             isFinished:Boolean,
-            response?:_Response,
+            response?:FetcherResponse,
         }):void,
         onFail(error:{
             message:String,
-            response?:_Response,
+            response?:FetcherResponse,
         }):void,
     }):void,
 }
 
-interface _Response{
+interface FetcherResponse{
     protocol:String,
     code:Number,
     message:String,
