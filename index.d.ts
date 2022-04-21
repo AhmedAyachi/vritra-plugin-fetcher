@@ -22,14 +22,21 @@ interface Fetcher{
         url:string,
         encoding:"form-data",
         body?:Object,
-        newFileNameKey?:String,
+        newFileNameKey?:String,//default: filename
         toast?:String,
         files:{
             path:String,
-            type?:String,
-            newName?:String,
+            type?:String,// file mime type
+            newName?:String,//without extension
         }[],
-        trackEachFile:Boolean,//progress for each file or total progress in the notifications
+        /**
+         *If true the upload notification will show the upload progress
+         *of each file separately otherwise a single progress for the sum of the
+         *files in progress upload
+         *default: false
+         *@type {Boolean}
+        */
+        trackEachFile:Boolean,
         onProgress(info:{
             progress:Number,//always the total progress
             isFinished:Boolean,
@@ -48,5 +55,8 @@ interface FetcherResponse{
     message:String,
     url:String,
     isSuccessful:Boolean,
-    body:String|Object,
+    /**
+     * Server actual response
+     */
+    body:any|Object,
 }

@@ -1,6 +1,7 @@
+import Alamofire;
 
 
-class Uploader:NSObject,FetcherDelegate,URLSessionDelegate,URLSessionDataDelegate{
+class Uploader:NSObject,FetcherDelegate{
 
     private let boundary:String=UUID().uuidString;
     var props:[AnyHashable:Any]=[:];
@@ -13,35 +14,28 @@ class Uploader:NSObject,FetcherDelegate,URLSessionDelegate,URLSessionDataDelegat
     };
 
     func upload(onProgress:(([AnyHashable:Any])->Void)?,onFail:(([AnyHashable:Any])->Void)?){
-        if let link=props["url"] as? String,let url=URL(string:link){
-            print("upload called");
-            if let files=props["files"] as? [String] {
-                let sessionConfig=URLSessionConfiguration.default;
-                let session=URLSession(
-                    configuration:sessionConfig,
-                    delegate:self,
-                    delegateQueue:nil
-                );
-                var request=URLRequest(url:url);
-                request.httpMethod="POST";
-                request.allHTTPHeaderFields=[
-                    "Content-Type":"multipart/form-data; boundary=\(boundary)",
-                    //"Accept":"application/json",
-                ];
-                request.httpBody=getHttpBody();
-                self.onProgress=onProgress;
-                self.onFail=onFail;
-                files.forEach({path in
-                    let task=session.uploadTask(
-                        with:request,
-                        from:"text=text content".data(using:.utf8),//URL(fileURLWithPath:path),
-                        completionHandler:{data,response,error in
-                            print("data:",String(data:data ?? Data(),encoding:.utf8));
-                            print("response:",response ?? "nil");
-                            print("error:",error ?? "nil");
-                        }
-                    );
-                    task.resume();
+        if let url=props["url"] as? String {
+            if let files=props["files"] as? [[AnyHashable:Any]]{
+                AF.upload(
+                    multipartFormData:{[self] in self.setMultipartFormData(files,$0)},
+                    to:url,method:.post,headers:nil
+                ).uploadProgress(queue:.main,closure:{[self] progress in
+                    self.onUploading(progress);
+                }).responseJSON(completionHandler:{[self] feedback in
+                    switch(feedback.result){
+                        case .success:
+                            self.onSuccess(feedback);
+                            break;
+                        case .failure:
+                            self.onError(feedback);
+                            break;
+                        default:break;
+                    }
+                    /* print("result:",response.result);
+                    print("value:",response.value);
+                    print("data:",String(decoding:response.data,as:UTF8.self));
+                    print("description:",response.description);
+                    print("code:",response.response) */
                 });
             }
         }
@@ -50,34 +44,74 @@ class Uploader:NSObject,FetcherDelegate,URLSessionDelegate,URLSessionDataDelegat
         }
     }
     
-    private func getHttpBody()->Data{
-        let name="file",value="Text.txt";
-        var body=Data();
-        body.append("--\(boundary)\r\n");
-        body.append("Content-Disposition: form-data; name=\"\(name)\"\r\n");
-        body.append("Content-Type: text/plain; charset=ISO-8859-1\r\n");
-        //body.append("Content-Transfer-Encoding: 8bit\r\n");
-        body.append("\r\n");
-        body.append("\(value)\r\n");
-        body.append("--\(boundary)--\r\n");
-        return body;
+    private func setMultipartFormData(_ files:[[AnyHashable:Any]],_ form:MultipartFormData){
+        let newFileNameKey=props["newFileNameKey"] as? String ?? "filename";
+        files.forEach({file in
+            let path=URL(fileURLWithPath:file["path"] as! String);
+            let filename=file["newName"] as? String;
+            if let data=try? Data(contentsOf:path){
+                form.append(
+                    data,
+                    withName:newFileNameKey,
+                    fileName:filename==nil ? path.lastPathComponent:"\(filename).\(Fetcher.getExtension(path.lastPathComponent))",
+                    mimeType:file["type"] as? String ?? "*/*"
+                );
+            };
+        });
+        self.useBody(form);
     }
 
-    /* func urlSession(_ session:URLSession,didBecomeInvalidWithError:Error?){
-        print("didBecomeInvalidWithError:",didBecomeInvalidWithError ?? "nil");
-    }
-
-    func urlSession(_ session:URLSession,dataTask task:URLSessionDataTask,didReceive response:URLResponse,completionHandler:(URLSession.ResponseDisposition)->Void) {
-       print("response:",response);
-       
-   } */
-
-}
-
-fileprivate extension Data{
-    mutating func append(_ string: String){
-        if let data=string.data(using:.utf8){
-            append(data);
+    private func useBody(_ data:MultipartFormData){
+        if let body=props["body"] as? [AnyHashable:Any] {
+            for (key,value) in body {
+                data.append(value as? Data ?? Data(),withName:"\(key)");
+            }
         }
-   }
+    }
+
+    private func onUploading(_ progress:Progress){
+        print("progress:",progress.fractionCompleted);
+    }
+
+    private func onSuccess(_ feedback:DataResponse<Any,AFError>){
+        let response=Uploader.getFetcherResponse(feedback);
+        print("upload succeeded",response);
+    }
+
+    private func onError(_ feedback:DataResponse<Any,AFError>){
+        let response=Uploader.getFetcherResponse(feedback);
+        print("error:",feedback.error);
+        print("upload failed",response);
+    }
+
+    static func getFetcherResponse(_ feedback:DataResponse<Any,AFError>)->[String:Any]{
+        let response=feedback.response;
+        var res:[String:Any]=[
+            "protocol":false,
+            "code":response?.statusCode ?? false,
+            "message":false,
+            "url":response.url.absoluteString ?? false,
+            "isSuccessful":false,
+            "body":false,
+        ];
+        if let data=feedback.data,let json=String(data:data,encoding:.utf8),
+            let object=try? JSONSerialization.jsonObject(with:data),
+            let dic=object as? [String:Any]{
+            res["body"]=dic;
+        };
+        return res;
+    }
 }
+
+/* class FetcherResponse:[String:Any] {
+    var _protocol:String;
+    var code:Number;
+    var message:String;
+    var url:String;
+    var isSuccessful:Boolean;
+    var body:String;
+
+    init(_ feedback:DataResponse<Any,AFError>){
+      
+    }
+}  */

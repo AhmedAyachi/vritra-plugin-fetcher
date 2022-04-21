@@ -88,7 +88,7 @@ class Downloader:NSObject,FetcherDelegate,URLSessionDelegate,URLSessionDownloadD
         if let location=self.location,let response=task.response {
             let filemanager=FileManager.default;
             let basename:String=props["filename"] as? String ?? Downloader.appname;
-            let ext:String=Downloader.getExtension(response);
+            let ext:String=Fetcher.getExtension(response);
             filename="\(basename).\(ext)";
             var destination=location.appendingPathComponent(filename);
             if(filemanager.fileExists(atPath:destination.path)){
@@ -133,30 +133,6 @@ class Downloader:NSObject,FetcherDelegate,URLSessionDelegate,URLSessionDownloadD
 
     static func getURLExtension(_ url:URL)->String{
         let name:String=url.lastPathComponent;
-        return Downloader.getExtension(name);
-    }
-
-    static func getExtension(_ path:String,_ separator:String=".")->String{
-        let parts=path.split(separator:separator.first ?? ".");
-        var ext=parts.count>1 ? String(parts.last!) :"";
-        if(ext.isEmpty){
-            ext="tmp";
-        }
-        return ext;
-    }
-
-    static func getExtension(_ respone:URLResponse)->String{
-        var ext="";
-        if let mimetype=respone.mimeType {
-            ext=Downloader.getExtension(mimetype,"/");
-
-        }
-        if ext.isEmpty,let name=respone.suggestedFilename {
-            ext=Downloader.getExtension(name,".");
-        }
-        if ext.isEmpty,let url=respone.url {
-            ext=getExtension(url.lastPathComponent,".");
-        }
-        return ext.isEmpty ? "tmp":ext;
+        return Fetcher.getExtension(name);
     }
 }

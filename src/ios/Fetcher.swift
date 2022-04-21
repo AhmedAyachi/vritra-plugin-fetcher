@@ -44,17 +44,7 @@ class Fetcher:FetcherPlugin {
             throw Fetcher.Error("url attribute is required");
         }
     }
-
-    private func toast(_ message:String){
-        DispatchQueue.main.async(execute:{
-            let alert=UIAlertController(title:"",message:message,preferredStyle:.actionSheet);
-            DispatchQueue.main.asyncAfter(deadline:DispatchTime.now()+2){
-                alert.dismiss(animated:true);
-            }
-            self.viewController.present(alert,animated:true);
-        });
-    }
-
+    
     private func onProgress(_ command:CDVInvokedUrlCommand,_ params:[AnyHashable:Any],_ props:[AnyHashable:Any]){
         let isFinished=params["isFinished"] as? Bool ?? true;
         if isFinished,let toast=props["toast"] as? String {
@@ -66,6 +56,16 @@ class Fetcher:FetcherPlugin {
     private func onFail(_ command:CDVInvokedUrlCommand,_ error:[AnyHashable:Any]){
         self.error(command,error);
     };
+    
+    private func toast(_ message:String){
+        DispatchQueue.main.async(execute:{
+            let alert=UIAlertController(title:"",message:message,preferredStyle:.actionSheet);
+            DispatchQueue.main.asyncAfter(deadline:DispatchTime.now()+2){
+                alert.dismiss(animated:true);
+            }
+            self.viewController.present(alert,animated:true);
+        });
+    }
 
     static func askPermissions(_ onGranted:@escaping(Bool,Any)->Void){
         let center=UNUserNotificationCenter.current();
@@ -79,6 +79,30 @@ class Fetcher:FetcherPlugin {
                 onGranted(granted,error ?? false);
             }
         });
+    }
+
+    static func getExtension(_ path:String,_ separator:String=".")->String{
+        let parts=path.split(separator:separator.first ?? ".");
+        var ext=parts.count>1 ? String(parts.last!) :"";
+        if(ext.isEmpty){
+            ext="tmp";
+        }
+        return ext;
+    }
+
+    static func getExtension(_ respone:URLResponse)->String{
+        var ext="";
+        if let mimetype=respone.mimeType {
+            ext=Fetcher.getExtension(mimetype,"/");
+
+        }
+        if ext.isEmpty,let name=respone.suggestedFilename {
+            ext=Fetcher.getExtension(name,".");
+        }
+        if ext.isEmpty,let url=respone.url {
+            ext=getExtension(url.lastPathComponent,".");
+        }
+        return ext.isEmpty ? "tmp":ext;
     }
 }
 
