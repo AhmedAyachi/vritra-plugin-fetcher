@@ -3,10 +3,10 @@ import Alamofire;
 
 class Uploader:NSObject,FetcherDelegate{
 
-    private let boundary:String=UUID().uuidString;
-    var props:[AnyHashable:Any]=[:];
-    var onProgress:(([AnyHashable:Any])->Void)?;
-    var onFail:(([AnyHashable:Any])->Void)?;
+    private var files:[[AnyHashable:Any]]=[];
+    private var props:[AnyHashable:Any]=[:];
+    private var onProgress:(([AnyHashable:Any])->Void)?;
+    private var onFail:(([AnyHashable:Any])->Void)?;
 
     init(_ props:[AnyHashable:Any]){
         super.init();
@@ -16,10 +16,11 @@ class Uploader:NSObject,FetcherDelegate{
     func upload(onProgress:(([AnyHashable:Any])->Void)?,onFail:(([AnyHashable:Any])->Void)?){
         if let url=props["url"] as? String {
             if let files=props["files"] as? [[AnyHashable:Any]]{
+                self.files=files;
                 self.onProgress=onProgress;
                 self.onFail=onFail;
                 AF.upload(
-                    multipartFormData:{[self] in self.setMultipartFormData(files,$0)},
+                    multipartFormData:{[self] in self.setMultipartFormData($0)},
                     to:url,method:.post,headers:nil
                 ).uploadProgress(queue:.main,closure:{[self] progress in
                     self.onUploading(progress);
@@ -36,7 +37,7 @@ class Uploader:NSObject,FetcherDelegate{
         }
     }
     
-    private func setMultipartFormData(_ files:[[AnyHashable:Any]],_ form:MultipartFormData){
+    private func setMultipartFormData(_ form:MultipartFormData){
         let newFileNameKey=props["newFileNameKey"] as? String ?? "filename";
         files.forEach({file in
             let path=URL(fileURLWithPath:file["path"] as! String);
@@ -62,11 +63,14 @@ class Uploader:NSObject,FetcherDelegate{
     }
 
     private func onUploading(_ progress:Progress){
-        self.onProgress?([
-            "progress":Int(progress.fractionCompleted*100),
-            "isFinished":false,
-            "response":false,
-        ]);
+        if(!(self.onProgress==nil)){
+            let value=Int(progress.fractionCompleted*100);
+            self.onProgress?([
+                "progress":value,
+                "isFinished":value>=100,
+                "response":false,
+            ]);
+        }
     }
 
     private func onSuccess(_ feedback:DataResponse<Any,AFError>){
