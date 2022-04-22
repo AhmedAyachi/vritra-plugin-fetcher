@@ -22,9 +22,9 @@ class Uploader:NSObject,FetcherDelegate{
                 AF.upload(
                     multipartFormData:{[self] in self.setMultipartFormData($0)},
                     to:url,method:.post,headers:nil
-                ).uploadProgress(queue:.main,closure:{[self] progress in
-                    self.onUploading(progress);
-                }).responseJSON(completionHandler:{[self] feedback in
+                )
+                .uploadProgress(queue:.main,closure:{[self] in self.onUploading($0)})
+                .responseJSON(completionHandler:{[self] feedback in
                     switch(feedback.result){
                         case .success:self.onSuccess(feedback);break;
                         case .failure:self.onError(feedback);break;
@@ -66,8 +66,8 @@ class Uploader:NSObject,FetcherDelegate{
         if(!(self.onProgress==nil)){
             let value=Int(progress.fractionCompleted*100);
             self.onProgress?([
-                "progress":value,
-                "isFinished":value>=100,
+                "progress":value>=100 ? 99:value,
+                "isFinished":false,
                 "response":false,
             ]);
         }

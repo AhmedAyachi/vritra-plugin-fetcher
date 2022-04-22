@@ -112,7 +112,7 @@ class Fetcher:FetcherPlugin {
 
     static func getResponse(_ feedback:DataResponse<Any,AFError>)->[String:Any]{
         let response=feedback.response;
-        let code=response?.statusCode ?? -1;//print
+        let code=response?.statusCode ?? -1;
         var res:[String:Any]=[
             "protocol":"",
             "code":code<0 ? false:code,
