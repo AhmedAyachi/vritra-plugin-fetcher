@@ -16,6 +16,8 @@ class Uploader:NSObject,FetcherDelegate{
     func upload(onProgress:(([AnyHashable:Any])->Void)?,onFail:(([AnyHashable:Any])->Void)?){
         if let url=props["url"] as? String {
             if let files=props["files"] as? [[AnyHashable:Any]]{
+                self.onProgress=onProgress;
+                self.onFail=onFail;
                 AF.upload(
                     multipartFormData:{[self] in self.setMultipartFormData(files,$0)},
                     to:url,method:.post,headers:nil
@@ -23,19 +25,9 @@ class Uploader:NSObject,FetcherDelegate{
                     self.onUploading(progress);
                 }).responseJSON(completionHandler:{[self] feedback in
                     switch(feedback.result){
-                        case .success:
-                            self.onSuccess(feedback);
-                            break;
-                        case .failure:
-                            self.onError(feedback);
-                            break;
-                        default:break;
+                        case .success:self.onSuccess(feedback);break;
+                        case .failure:self.onError(feedback);break;
                     }
-                    /* print("result:",response.result);
-                    print("value:",response.value);
-                    print("data:",String(decoding:response.data,as:UTF8.self));
-                    print("description:",response.description);
-                    print("code:",response.response) */
                 });
             }
         }
@@ -53,7 +45,7 @@ class Uploader:NSObject,FetcherDelegate{
                 form.append(
                     data,
                     withName:newFileNameKey,
-                    fileName:filename==nil ? path.lastPathComponent:"\(filename).\(Fetcher.getExtension(path.lastPathComponent))",
+                    fileName:filename==nil ? path.lastPathComponent:"\(filename!).\(Fetcher.getExtension(path.lastPathComponent))",
                     mimeType:file["type"] as? String ?? "*/*"
                 );
             };
@@ -62,56 +54,40 @@ class Uploader:NSObject,FetcherDelegate{
     }
 
     private func useBody(_ data:MultipartFormData){
-        if let body=props["body"] as? [AnyHashable:Any] {
+        if let body=props["body"] as? [String:Any] {
             for (key,value) in body {
-                data.append(value as? Data ?? Data(),withName:"\(key)");
+                data.append("\(value)".data(using:.utf8) ?? Data(),withName:"\(key)");
             }
         }
     }
 
     private func onUploading(_ progress:Progress){
-        print("progress:",progress.fractionCompleted);
+        self.onProgress?([
+            "progress":Int(progress.fractionCompleted*100),
+            "isFinished":false,
+            "response":false,
+        ]);
     }
 
     private func onSuccess(_ feedback:DataResponse<Any,AFError>){
-        let response=Uploader.getFetcherResponse(feedback);
-        print("upload succeeded",response);
+        let response=feedback.response;
+        let code=response?.statusCode ?? -1;
+        if((200...299).contains(code)){
+            self.onProgress?([
+                "progress":100,
+                "isFinished":true,
+                "response":Fetcher.getResponse(feedback),
+            ]);
+        }
+        else{
+            self.onError(feedback);
+        }
     }
 
     private func onError(_ feedback:DataResponse<Any,AFError>){
-        let response=Uploader.getFetcherResponse(feedback);
-        print("error:",feedback.error);
-        print("upload failed",response);
-    }
-
-    static func getFetcherResponse(_ feedback:DataResponse<Any,AFError>)->[String:Any]{
-        let response=feedback.response;
-        var res:[String:Any]=[
-            "protocol":false,
-            "code":response?.statusCode ?? false,
-            "message":false,
-            "url":response.url.absoluteString ?? false,
-            "isSuccessful":false,
-            "body":false,
-        ];
-        if let data=feedback.data,let json=String(data:data,encoding:.utf8),
-            let object=try? JSONSerialization.jsonObject(with:data),
-            let dic=object as? [String:Any]{
-            res["body"]=dic;
-        };
-        return res;
+        self.onFail?([
+            "message":feedback.error?.localizedDescription ?? "Unknown error",
+            "response":Fetcher.getResponse(feedback),
+        ]);
     }
 }
-
-/* class FetcherResponse:[String:Any] {
-    var _protocol:String;
-    var code:Number;
-    var message:String;
-    var url:String;
-    var isSuccessful:Boolean;
-    var body:String;
-
-    init(_ feedback:DataResponse<Any,AFError>){
-      
-    }
-}  */

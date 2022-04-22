@@ -1,4 +1,5 @@
 import Foundation;
+import Alamofire;
 
 
 class Fetcher:FetcherPlugin {
@@ -56,6 +57,10 @@ class Fetcher:FetcherPlugin {
     private func onFail(_ command:CDVInvokedUrlCommand,_ error:[AnyHashable:Any]){
         self.error(command,error);
     };
+
+    /* private func onFail(_ error:Error){
+
+    } */
     
     private func toast(_ message:String){
         DispatchQueue.main.async(execute:{
@@ -104,6 +109,36 @@ class Fetcher:FetcherPlugin {
         }
         return ext.isEmpty ? "tmp":ext;
     }
+
+    static func getResponse(_ feedback:DataResponse<Any,AFError>)->[String:Any]{
+        let response=feedback.response;
+        let code=response?.statusCode ?? -1;//print
+        var res:[String:Any]=[
+            "protocol":"",
+            "code":code<0 ? false:code,
+            "message":"",
+            "url":response?.url?.absoluteString ?? false,
+            "isSuccessful":(200...299).contains(code),
+            "body":false,
+        ];
+        if let data=feedback.data,let json=try? JSONSerialization.jsonObject(with:data),
+            let body=json as? [String:Any]{
+            res["body"]=body;
+        };
+        return res;
+    }
+
+    /* static func getResponse(_ error:Error)->[String:Any]{
+        var response:[String:Any]=[
+            "protocol":false,
+            "code":false,
+            "message":"",
+            "url":response?.url?.absoluteString ?? false,
+            "isSuccessful":(200...299).contains(code),
+            "body":false,
+        ];
+        return response;
+    } */
 }
 
 @objc protocol FetcherDelegate {
