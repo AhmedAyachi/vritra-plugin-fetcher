@@ -1,12 +1,18 @@
 import Alamofire;
 
 
-class Uploader:NSObject,FetcherDelegate{
+class Uploader:NSObject,FetcherDelegate,UNUserNotificationCenterDelegate{
 
+    private let id:String="fetcher\(Int.random(in:0...99999))";
     private var files:[[AnyHashable:Any]]=[];
     private var props:[AnyHashable:Any]=[:];
     private var onProgress:(([AnyHashable:Any])->Void)?;
     private var onFail:(([AnyHashable:Any])->Void)?;
+    private lazy var progress:Int=0;
+    private lazy var trackedindex:Int=(-1); 
+    private var trackedfile:[AnyHashable:Any]?;
+    private var totalSize:Int=0;
+    private lazy var unit=100/files.count;
 
     init(_ props:[AnyHashable:Any]){
         super.init();
@@ -19,6 +25,7 @@ class Uploader:NSObject,FetcherDelegate{
                 self.files=files;
                 self.onProgress=onProgress;
                 self.onFail=onFail;
+                self.notify();
                 AF.upload(
                     multipartFormData:{[self] in self.setMultipartFormData($0)},
                     to:url,method:.post,headers:nil
@@ -39,18 +46,24 @@ class Uploader:NSObject,FetcherDelegate{
     
     private func setMultipartFormData(_ form:MultipartFormData){
         let newFileNameKey=props["newFileNameKey"] as? String ?? "filename";
-        files.forEach({file in
-            let path=URL(fileURLWithPath:file["path"] as! String);
-            let filename=file["newName"] as? String;
-            if let data=try? Data(contentsOf:path){
-                form.append(
-                    data,
-                    withName:newFileNameKey,
-                    fileName:filename==nil ? path.lastPathComponent:"\(filename!).\(Fetcher.getExtension(path.lastPathComponent))",
-                    mimeType:file["type"] as? String ?? "*/*"
-                );
-            };
-        });
+        for var file in files{
+            if let path=file["path"] as? String {
+                let url=URL(fileURLWithPath:path);
+                if let data=try? Data(contentsOf:url){
+                    let filename=Uploader.getFileName(file);
+                    file["name"]=filename;
+                    let size=(try? url.resourceValues(forKeys:[URLResourceKey.fileSizeKey]).fileSize ?? 1) ?? 1;
+                    self.totalSize+=size;
+                    file["size"]=size;
+                    form.append(
+                        data,
+                        withName:newFileNameKey,
+                        fileName:filename,
+                        mimeType:file["type"] as? String ?? "*/*"
+                    );
+                };   
+            }
+        }
         self.useBody(form);
     }
 
@@ -63,19 +76,29 @@ class Uploader:NSObject,FetcherDelegate{
     }
 
     private func onUploading(_ progress:Progress){
-        if(!(self.onProgress==nil)){
-            let value=Int(progress.fractionCompleted*100);
-            self.onProgress?([
-                "progress":value>=100 ? 99:value,
-                "isFinished":false,
-                "response":false,
-            ]);
+        var value=Int(progress.fractionCompleted*100);
+        if(value>=100){
+            value=99;
         }
+        let length=files.count,index=Int(value/(100/length));
+        if(index<length){
+            self.trackedindex=index;
+            self.trackedfile=files[index];
+            self.progress=value;
+            self.notify();
+        }
+        self.onProgress?([
+            "progress":value,
+            "isFinished":false,
+            "response":false,
+        ]);
     }
 
     private func onSuccess(_ feedback:DataResponse<Any,AFError>){
         let response=feedback.response;
         let code=response?.statusCode ?? -1;
+        self.progress=100;
+        self.notify();
         if((200...299).contains(code)){
             self.onProgress?([
                 "progress":100,
@@ -88,10 +111,74 @@ class Uploader:NSObject,FetcherDelegate{
         }
     }
 
+    private func notify(){
+        let length=files.count;
+        let content=UNMutableNotificationContent();
+        content.title=Fetcher.appname;
+        if(progress>=100){
+            content.body="\(length>1 ? "\(length) files":"file") uploaded successfully";
+        }
+        else if(trackedindex<0){
+            content.body="Uploading \(length>1 ?"\(length) files":Uploader.getFileName(files[0]))";
+        }
+        else{
+            let file=files[trackedindex];
+            let trackEachFile=props["trackEachFile"] as? Bool ?? false;
+            if(trackEachFile&&(length>1)){
+                let overflow=trackedindex<1 ? 0 :file["size"] as? Int ?? 0;
+                let downloaded=progress*totalSize/100;
+                content.subtitle="\((downloaded-overflow)*100/totalSize)%";
+                print(file["name"] ?? "",(downloaded-overflow)*100/totalSize);
+                //(progress-trackedindex*unit)*100/unit
+            }
+            else{
+                content.subtitle="\(progress)%";
+            }
+            content.body="Uploading \(file["name"] ?? "file")";
+        }
+        let request=UNNotificationRequest(
+            identifier:self.id,
+            content:content,
+            trigger:nil
+        );
+        let center=UNUserNotificationCenter.current();
+        center.delegate=self;
+        center.add(request,withCompletionHandler:{[self] error in
+            if !(error==nil){
+                onFail?(["message":error!.localizedDescription]);
+            }
+        });
+    }
+
+    func userNotificationCenter(_ center:UNUserNotificationCenter,willPresent notification:UNNotification,withCompletionHandler completionHandler:@escaping(UNNotificationPresentationOptions)->Void){
+        center.getDeliveredNotifications{[self] notifications in 
+            if(!notifications.contains(where:{notification in notification.request.identifier==self.id})){
+                completionHandler([.alert,.badge,.sound]);   
+            }
+        };
+    }
+
+    func userNotificationCenter(_ center:UNUserNotificationCenter,didReceive response:UNNotificationResponse,withCompletionHandler:()->Void){
+        //print("notification \(response.notification.request.identifier)dismissed");
+    }
+
     private func onError(_ feedback:DataResponse<Any,AFError>){
+        let center=UNUserNotificationCenter.current();
+        center.removeDeliveredNotifications(withIdentifiers:[self.id]);
         self.onFail?([
             "message":feedback.error?.localizedDescription ?? "Unknown error",
             "response":Fetcher.getResponse(feedback),
         ]);
+    }
+
+    static func getFileName(_ file:[AnyHashable:Any])->String{
+        var filename:String?;
+        let path=file["path"] as? String ?? "";
+        if(!path.isEmpty){
+            let url=URL(fileURLWithPath:path)
+            filename=file["newName"] as? String;
+            filename=filename==nil ? url.lastPathComponent:"\(filename!).\(Fetcher.getExtension(url.lastPathComponent))";
+        };
+        return filename ?? "";
     }
 }

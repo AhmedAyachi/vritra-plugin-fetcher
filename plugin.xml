@@ -44,7 +44,12 @@
         <source-file src="src/ios/Downloader.swift"/>
         <source-file src="src/ios/Uploader.swift"/>
         <source-file src="src/ios/Fetcher.swift"/>
-        <framework src="Alamofire" type="podspec" spec="5.3.0" />
+        <framework src="Alamofire" type="podspec" spec="5.3.0"/>
+        <!-- <podspec>
+            <pods use-frameworks="true">
+                <pod name="Alamofire" spec="5.3.0"/>
+            </pods>
+        </podspec> -->
     </platform>
 
     <platform name="browser">

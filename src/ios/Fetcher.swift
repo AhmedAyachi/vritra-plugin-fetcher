@@ -4,6 +4,8 @@ import Alamofire;
 
 class Fetcher:FetcherPlugin {
 
+    static let appname=Bundle.main.infoDictionary?["CFBundleDisplayName" as String] as? String ?? "";
+
     @objc(download:)
     func download(command:CDVInvokedUrlCommand){
         do{
@@ -47,9 +49,9 @@ class Fetcher:FetcherPlugin {
     }
     
     private func onProgress(_ command:CDVInvokedUrlCommand,_ params:[AnyHashable:Any],_ props:[AnyHashable:Any]){
-        let isFinished=params["isFinished"] as? Bool ?? true;
-        if isFinished,let toast=props["toast"] as? String {
-            self.toast(toast);
+        let isFinished=params["isFinished"] as? Bool ?? false;
+        if isFinished,let message=props["toast"] as? String {
+            self.toast(message);
         }
         self.success(command,params,NSNumber(value:!isFinished));
     }
@@ -57,13 +59,9 @@ class Fetcher:FetcherPlugin {
     private func onFail(_ command:CDVInvokedUrlCommand,_ error:[AnyHashable:Any]){
         self.error(command,error);
     };
-
-    /* private func onFail(_ error:Error){
-
-    } */
     
     private func toast(_ message:String){
-        DispatchQueue.main.async(execute:{
+        DispatchQueue.main.async(execute:{[self] in
             let alert=UIAlertController(title:"",message:message,preferredStyle:.actionSheet);
             DispatchQueue.main.asyncAfter(deadline:DispatchTime.now()+2){
                 alert.dismiss(animated:true);

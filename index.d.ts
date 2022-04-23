@@ -40,7 +40,7 @@ interface Fetcher{
         * default: true
         */
         notify?:Boolean,//true
-        onProgress(data:ProgressData):void,
+        onProgress(data:FetcherProgressData):void,
         onFail(error:{
             message:String,
         }):void,
@@ -88,7 +88,7 @@ interface Fetcher{
         * @type {Boolean}
         */
         trackEachFile:Boolean,
-        onProgress(data:ProgressData):void,
+        onProgress(data:FetcherProgressData):void,
         onFail(error:{
             message:String,
             response?:FetcherResponse,
@@ -96,7 +96,7 @@ interface Fetcher{
     }):void,
 }
 
-interface ProgressData {
+interface FetcherProgressData {
     /**
     * The upload total progress
     * An integer between 0 and 100

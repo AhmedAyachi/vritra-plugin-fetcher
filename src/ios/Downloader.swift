@@ -2,7 +2,6 @@
 
 class Downloader:NSObject,FetcherDelegate,URLSessionDelegate,URLSessionDownloadDelegate,UNUserNotificationCenterDelegate{
     
-    static let appname=Bundle.main.infoDictionary?["CFBundleDisplayName" as String] as? String ?? "";
     var props:[AnyHashable:Any]=[:];
     var location:URL?;
     var filename:String="";
@@ -87,7 +86,7 @@ class Downloader:NSObject,FetcherDelegate,URLSessionDelegate,URLSessionDownloadD
     private func saveFile(_ path:URL,_ task:URLSessionDownloadTask,_ session:URLSession)throws{
         if let location=self.location,let response=task.response {
             let filemanager=FileManager.default;
-            let basename:String=props["filename"] as? String ?? Downloader.appname;
+            let basename:String=props["filename"] as? String ?? Fetcher.appname;
             let ext:String=Fetcher.getExtension(response);
             filename="\(basename).\(ext)";
             var destination=location.appendingPathComponent(filename);
@@ -110,7 +109,7 @@ class Downloader:NSObject,FetcherDelegate,URLSessionDelegate,URLSessionDownloadD
 
     private func notify(){
         let content=UNMutableNotificationContent();
-        content.title=Downloader.appname;
+        content.title=Fetcher.appname;
         content.subtitle=filename;
         content.body="Download complete.";
         let request=UNNotificationRequest(
