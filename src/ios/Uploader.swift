@@ -125,11 +125,15 @@ class Uploader:NSObject,FetcherDelegate,UNUserNotificationCenterDelegate{
             let file=files[trackedindex];
             let trackEachFile=props["trackEachFile"] as? Bool ?? false;
             if(trackEachFile&&(length>1)){
-                let overflow=trackedindex<1 ? 0 :file["size"] as? Int ?? 0;
+                let size=file["size"] as? Int ?? 1;
+                var overflow=0;
+                for i in 0..<files.count {
+                    if(i<trackedindex){
+                        overflow+=files[i]["size"] as? Int ?? 0;
+                    }
+                }
                 let downloaded=progress*totalSize/100;
-                content.subtitle="\((downloaded-overflow)*100/totalSize)%";
-                print(file["name"] ?? "",(downloaded-overflow)*100/totalSize);
-                //(progress-trackedindex*unit)*100/unit
+                content.subtitle="\((downloaded-overflow)*100/size)%";
             }
             else{
                 content.subtitle="\(progress)%";
