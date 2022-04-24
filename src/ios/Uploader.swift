@@ -32,10 +32,11 @@ class Uploader:NSObject,FetcherDelegate,UNUserNotificationCenterDelegate{
                 )
                 .uploadProgress(queue:.main,closure:{[self] in self.onUploading($0)})
                 .responseJSON(completionHandler:{[self] feedback in
-                    switch(feedback.result){
+                    self.onResponse(feedback);
+                    /* switch(feedback.result){
                         case .success:self.onSuccess(feedback);break;
                         case .failure:self.onError(feedback);break;
-                    }
+                    } */
                 });
             }
         }
@@ -94,12 +95,12 @@ class Uploader:NSObject,FetcherDelegate,UNUserNotificationCenterDelegate{
         ]);
     }
 
-    private func onSuccess(_ feedback:DataResponse<Any,AFError>){
+    private func onResponse(_ feedback:DataResponse<Any,AFError>){
         let response=feedback.response;
         let code=response?.statusCode ?? -1;
         self.progress=100;
-        self.notify();
         if((200...299).contains(code)){
+            self.notify();
             self.onProgress?([
                 "progress":100,
                 "isFinished":true,
@@ -107,7 +108,12 @@ class Uploader:NSObject,FetcherDelegate,UNUserNotificationCenterDelegate{
             ]);
         }
         else{
-            self.onError(feedback);
+            let center=UNUserNotificationCenter.current();
+            center.removeDeliveredNotifications(withIdentifiers:[self.id]);
+            self.onFail?([
+                "message":feedback.error?.localizedDescription ?? "Unknown error",
+                "response":Fetcher.getResponse(feedback),
+            ]);
         }
     }
 
@@ -160,19 +166,6 @@ class Uploader:NSObject,FetcherDelegate,UNUserNotificationCenterDelegate{
                 completionHandler([.alert,.badge,.sound]);   
             }
         };
-    }
-
-    func userNotificationCenter(_ center:UNUserNotificationCenter,didReceive response:UNNotificationResponse,withCompletionHandler:()->Void){
-        //print("notification \(response.notification.request.identifier)dismissed");
-    }
-
-    private func onError(_ feedback:DataResponse<Any,AFError>){
-        let center=UNUserNotificationCenter.current();
-        center.removeDeliveredNotifications(withIdentifiers:[self.id]);
-        self.onFail?([
-            "message":feedback.error?.localizedDescription ?? "Unknown error",
-            "response":Fetcher.getResponse(feedback),
-        ]);
     }
 
     static func getFileName(_ file:[AnyHashable:Any])->String{

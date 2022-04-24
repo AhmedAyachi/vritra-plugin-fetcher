@@ -114,7 +114,7 @@ class Fetcher:FetcherPlugin {
         var res:[String:Any]=[
             "protocol":"",
             "code":code<0 ? false:code,
-            "message":"",
+            "message":feedback.error?.localizedDescription ?? "",
             "url":response?.url?.absoluteString ?? false,
             "isSuccessful":(200...299).contains(code),
             "body":false,

@@ -1,18 +1,19 @@
 {
   "name": "cordova-plugin-fetcher",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "main": "www/index.js",
   "types": "index.d.ts",
   "description": "cordova custom plugin fetcher",
   "cordova": {
     "id": "cordova-plugin-fetcher",
     "platforms": [
-      "android"
+      "android",
+      "ios"
     ]
   },
   "keywords": [
-    "ecosystem:cordova",
-    "cordova-android"
+    "cordova-plugin-fetcher",
+    "fetcher"
   ],
   "author": "Ahmed Ayachi",
   "license": "ISC"
