@@ -23,7 +23,6 @@
             <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
             <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION"/>
         </config-file>
-        <config-file target="AndroidManifest.xml" parent="application"></config-file>
         <source-file src="src/android/Fetcher.java" target-dir="src/com/ahmedayachi/fetcher/Fetcher"/>
         <source-file src="src/android/Uploader.java" target-dir="src/com/ahmedayachi/fetcher/Fetcher"/>
         <source-file src="src/android/UploaderClient.java" target-dir="src/com/ahmedayachi/fetcher/Fetcher"/>
