@@ -2,6 +2,7 @@ package com.ahmedayachi.fetcher;
 
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
+import retrofit2.http.HeaderMap;
 import retrofit2.http.Part;
 import retrofit2.http.PartMap;
 import retrofit2.Call;
@@ -16,5 +17,9 @@ public interface UploadAPI {
 
     @Multipart
     @POST("/")
-    Call<ResponseBody> uploadFile(@Part ArrayList<MultipartBody.Part> fileParts,@PartMap Map<String,RequestBody> body);
+    Call<ResponseBody> uploadFile(
+        @HeaderMap Map<String,String> headers,
+        @Part ArrayList<MultipartBody.Part> fileParts,
+        @PartMap Map<String,RequestBody> body
+    );
 }

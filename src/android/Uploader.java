@@ -25,6 +25,7 @@ import org.json.JSONException;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Map;
@@ -42,11 +43,13 @@ import retrofit2.Response;
 
 public class Uploader extends Worker implements ProgressRequest.UploadCallbacks{
 
-    static final String channelId="UploaderChannel";
+    static final String channelId="FetcherUploaderChannel";
     static Boolean channelCreated=false;
     protected static final NotificationManagerCompat manager=NotificationManagerCompat.from(Fetcher.context);
 
     private JSONObject props,params=new JSONObject(),error=new JSONObject();
+    private final JSONArray files=new JSONArray();
+    private final JSONArray excluded=new JSONArray();
     private CallbackContext callback;
     private NotificationCompat.Builder builder;
     private int id,index=-1,fileslength=0;
@@ -65,92 +68,12 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks{
             try{
                 callback=(CallbackContext)Fetcher.callbacks.opt(callbackRef);
                 props=new JSONObject(data.getString("props"));
-                trackEachFile=props.optBoolean("trackEachFile",false);
-                this.upload();
+                this.setFiles();
+                if(this.files.length()>0){
+                    trackEachFile=props.optBoolean("trackEachFile",false);
+                    this.upload();
+                }
                 Fetcher.callbacks.remove(callbackRef);
-            }
-            catch(Exception exception){}
-        }
-
-        return Result.success();
-    }
-
-    private void upload(){
-        final JSONArray files=props.optJSONArray("files");
-        fileslength=files.length();
-        if(fileslength>0){
-            try{
-                final ArrayList<MultipartBody.Part> fileParts=new ArrayList<MultipartBody.Part>(1);
-                for(int i=0;i<fileslength;i++){
-                    final JSONObject fileProps=files.optJSONObject(i);
-                    final File file=new File(Uploader.getPath(fileProps.optString("path")));
-                    final ProgressRequest fileRequest=new ProgressRequest(this,fileProps.optString("type","*"),file);
-                    final MultipartBody.Part filePart=MultipartBody.Part.createFormData(props.optString("newFileNameKey","filename"),fileProps.optString("newName",file.getName()),fileRequest);
-                    fileParts.add(filePart);
-                }
-                unit=100/fileslength;
-                final Map<String,RequestBody> bodymap=new HashMap<String,RequestBody>();
-                final JSONObject body=props.optJSONObject("body");
-                if(body!=null){
-                    final JSONArray keys=body.names();
-                    if(keys!=null){
-                        final int keyslength=keys.length();
-                        for(int i=0;i<keyslength;i++){
-                            final String key=keys.optString(i);
-                            bodymap.put(key,RequestBody.create(MultipartBody.FORM,body.optString(key)));
-                        }
-                    }
-                }
-                final Retrofit client=UploaderClient.getClient(props.optString("url"));
-                final UploadAPI api=client.create(UploadAPI.class);
-                final Call call=api.uploadFile(fileParts,bodymap);
-                call.enqueue(new Callback(){
-                    @Override
-                    public void onResponse(Call call,Response response){
-                        if(response.isSuccessful()){
-                            final String message=props.optString("toast",null);
-                            if(message!=null){
-                                Fetcher.cordova.getActivity().runOnUiThread(new Runnable(){
-                                    public void run(){
-                                        Toast.makeText(Fetcher.context,message,Toast.LENGTH_SHORT).show();
-                                    }
-                                });
-                            }
-                            builder.setContentTitle(((fileslength>1)?""+fileslength+" Files":"File")+" uploaded successfully");
-                            builder.setContentText(null);
-                            builder.setProgress(100,100,false);
-                            builder.setOngoing(false);
-                            manager.notify(id,builder.build());
-                            try{
-                                params.put("progress",100);
-                                params.put("isFinished",true);
-                                params.put("response",getJSONObjectResponse(response));
-                                callback.success(params);
-                                manager.notify(id,builder.build());
-                            }
-                            catch(Exception exception){}
-                        }
-                        else{
-                            try{
-                                manager.cancel(id);
-                                error.put("message","Unknown error");
-                                error.put("response",getJSONObjectResponse(response));
-                                callback.error(error);
-                            }
-                            catch(Exception exception){}
-                        }
-                    }
-                    @Override
-                    public void onFailure(Call call,Throwable throwable){
-                        try{
-                            manager.cancel(id);
-                            error.put("message",throwable.getMessage());
-                            callback.error(error);
-                        }
-                        catch(Exception e){}
-                    }
-                });
-                this.showNotification();
             }
             catch(Exception exception){
                 try{
@@ -160,6 +83,116 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks{
                 catch(Exception e){}
             }
         }
+        return Result.success();
+    }
+
+    private void setFiles(){
+        final JSONArray files=props.optJSONArray("files");
+        final int length=files.length();
+        for(int i=0;i<length;i++){
+            final JSONObject fileProps=files.optJSONObject(i);
+            final File file=new File(Uploader.getPath(fileProps.optString("path")));
+            try{
+                if(file.exists()){
+                    fileProps.put("file",file);
+                    this.files.put(fileProps);
+                }
+                else{
+                    this.excluded.put(fileProps);
+                }
+            }
+            catch(Exception exception){}
+        }
+    }
+
+    private void upload() throws Exception{
+        fileslength=files.length();
+        final ArrayList<MultipartBody.Part> fileParts=new ArrayList<MultipartBody.Part>(1);
+        for(int i=0;i<fileslength;i++){
+            final JSONObject fileProps=files.optJSONObject(i);
+            final File file=(File)fileProps.opt("file");
+            final ProgressRequest fileRequest=new ProgressRequest(this,fileProps.optString("type","*"),file);
+            final MultipartBody.Part filePart=MultipartBody.Part.createFormData(props.optString("newFileNameKey","filename"),fileProps.optString("newName",file.getName()),fileRequest);
+            fileParts.add(filePart);
+        }
+        unit=100/fileslength;
+        final Map<String,RequestBody> bodymap=new HashMap<String,RequestBody>();
+        final JSONObject body=props.optJSONObject("body");
+        if(body!=null){
+            final JSONArray keys=body.names();
+            if(keys!=null){
+                final int keyslength=keys.length();
+                for(int i=0;i<keyslength;i++){
+                    final String key=keys.optString(i);
+                    bodymap.put(key,RequestBody.create(MultipartBody.FORM,body.optString(key)));
+                }
+            }
+        }
+        final Retrofit client=UploaderClient.getClient(props.optString("url"));
+        final UploadAPI api=client.create(UploadAPI.class);
+        final Call call=api.uploadFile(getHeaders(),fileParts,bodymap);
+        call.enqueue(new Callback(){
+            @Override
+            public void onResponse(Call call,Response response){
+                if(response.isSuccessful()){
+                    final String message=props.optString("toast",null);
+                    if(message!=null){
+                        Fetcher.cordova.getActivity().runOnUiThread(new Runnable(){
+                            public void run(){
+                                Toast.makeText(Fetcher.context,message,Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                    builder.setContentTitle(((fileslength>1)?""+fileslength+" Files":"File")+" uploaded successfully");
+                    builder.setContentText(null);
+                    builder.setProgress(100,100,false);
+                    builder.setOngoing(false);
+                    manager.notify(id,builder.build());
+                    try{
+                        params.put("progress",100);
+                        params.put("isFinished",true);
+                        params.put("response",getJSONObjectResponse(response));
+                        params.put("excluded",excluded.length()>0?excluded:null);
+                        callback.success(params);
+                        manager.notify(id,builder.build());
+                    }
+                    catch(Exception exception){}
+                }
+                else{
+                    try{
+                        manager.cancel(id);
+                        error.put("message","Unknown error");
+                        error.put("response",getJSONObjectResponse(response));
+                        callback.error(error);
+                    }
+                    catch(Exception exception){}
+                }
+            }
+            @Override
+            public void onFailure(Call call,Throwable throwable){
+                try{
+                    manager.cancel(id);
+                    error.put("message",throwable.getMessage());
+                    callback.error(error);
+                }
+                catch(Exception e){}
+            }
+        });
+        this.showNotification();
+    }
+
+    private Map<String,String> getHeaders(){
+        final Map<String,String> headers=new HashMap<String,String>();
+        final JSONObject header=props.optJSONObject("header");
+        if(header!=null){
+            final Iterator<String> keys=header.keys();
+            while(keys.hasNext()){
+                final String key=keys.next();
+                headers.put(key,header.optString(key));
+            }
+        }
+
+        return headers;
     }
 
     public void onFileStart(File file){
@@ -200,7 +233,7 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks{
         Uploader.createNotificationChannel();
         id=new Random().nextInt(9999);
         builder=new NotificationCompat.Builder(Fetcher.context,channelId);
-        builder.setContentTitle((fileslength>1)?"Uploading "+fileslength+" files":"Uploading file");
+        builder.setContentTitle((fileslength>1)?"Uploading "+(fileslength+excluded.length())+" files":"Uploading file");
         builder.setContentText("0%");
         builder.setSmallIcon(Fetcher.context.getApplicationInfo().icon);
         builder.setOngoing(true);
