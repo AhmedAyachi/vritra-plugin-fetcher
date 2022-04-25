@@ -4,8 +4,9 @@ import Alamofire;
 class Uploader:NSObject,FetcherDelegate,UNUserNotificationCenterDelegate{
 
     private let id:String="fetcher\(Int.random(in:0...99999))";
-    private var files:[[AnyHashable:Any]]=[];
     private var props:[AnyHashable:Any]=[:];
+    private var files:[[AnyHashable:Any]]=[];
+    private var excluded:[[AnyHashable:Any]]=[];
     private var onProgress:(([AnyHashable:Any])->Void)?;
     private var onFail:(([AnyHashable:Any])->Void)?;
     private lazy var progress:Int=0;
@@ -21,14 +22,14 @@ class Uploader:NSObject,FetcherDelegate,UNUserNotificationCenterDelegate{
 
     func upload(onProgress:(([AnyHashable:Any])->Void)?,onFail:(([AnyHashable:Any])->Void)?){
         if let url=props["url"] as? String {
-            if let files=props["files"] as? [[AnyHashable:Any]]{
-                self.files=files;
+            self.setFiles();
+            if(!self.files.isEmpty){
                 self.onProgress=onProgress;
                 self.onFail=onFail;
                 self.notify();
                 AF.upload(
                     multipartFormData:{[self] in self.setMultipartFormData($0)},
-                    to:url,method:.post,headers:nil
+                    to:url,method:.post,headers:getHeaders()
                 )
                 .uploadProgress(queue:.main,closure:{[self] in self.onUploading($0)})
                 .responseJSON(completionHandler:{[self] feedback in
@@ -44,31 +45,56 @@ class Uploader:NSObject,FetcherDelegate,UNUserNotificationCenterDelegate{
             self.onFail?(["message":"invalid url"]);
         }
     }
+
+    private func setFiles(){
+        if let files=props["files"] as? [[AnyHashable:Any]]{
+            for var file in files{
+                if let path=file["path"] as? String {
+                    let url=URL(fileURLWithPath:path);
+                    if let data=try? Data(contentsOf:url){
+                        let filename=Uploader.getFileName(file);
+                        file["name"]=filename;
+                        let size=(try? url.resourceValues(forKeys:[URLResourceKey.fileSizeKey]).fileSize ?? 1) ?? 1;
+                        self.totalSize+=size;
+                        file["size"]=size;
+                        file["data"]=data;
+                        self.files.append(file);
+                    }
+                    else{
+                        self.excluded.append(file);
+                    }
+                }
+                else{
+                    self.excluded.append(file);
+                }
+            }
+        }
+    }
+
+    private func getHeaders()->HTTPHeaders{
+        var headers:HTTPHeaders=[:];
+        if let header=props["header"] as? [String:Any] {
+            for (key,value) in header {
+                headers["\(key)"]="\(value)";
+            }
+        }
+        return headers;
+    }
     
     private func setMultipartFormData(_ form:MultipartFormData){
         let newFileNameKey=props["newFileNameKey"] as? String ?? "filename";
-        for var file in files{
-            if let path=file["path"] as? String {
-                let url=URL(fileURLWithPath:path);
-                if let data=try? Data(contentsOf:url){
-                    let filename=Uploader.getFileName(file);
-                    file["name"]=filename;
-                    let size=(try? url.resourceValues(forKeys:[URLResourceKey.fileSizeKey]).fileSize ?? 1) ?? 1;
-                    self.totalSize+=size;
-                    file["size"]=size;
-                    form.append(
-                        data,
-                        withName:newFileNameKey,
-                        fileName:filename,
-                        mimeType:file["type"] as? String ?? "*/*"
-                    );
-                };   
-            }
-        }
-        self.useBody(form);
+        self.files.forEach({file in
+            form.append(
+                file["data"] as! Data,
+                withName:newFileNameKey,
+                fileName:(file["name"] as! String),
+                mimeType:file["type"] as? String ?? "*/*"
+            );
+        });
+        self.setFormDataBody(form);
     }
 
-    private func useBody(_ data:MultipartFormData){
+    private func setFormDataBody(_ data:MultipartFormData){
         if let body=props["body"] as? [String:Any] {
             for (key,value) in body {
                 data.append("\(value)".data(using:.utf8) ?? Data(),withName:"\(key)");
@@ -98,13 +124,14 @@ class Uploader:NSObject,FetcherDelegate,UNUserNotificationCenterDelegate{
     private func onResponse(_ feedback:DataResponse<Any,AFError>){
         let response=feedback.response;
         let code=response?.statusCode ?? -1;
-        self.progress=100;
         if((200...299).contains(code)){
+            self.progress=100;
             self.notify();
             self.onProgress?([
                 "progress":100,
                 "isFinished":true,
                 "response":Fetcher.getResponse(feedback),
+                "excluded":self.excluded.count>0 ? self.excluded:false,
             ]);
         }
         else{
@@ -115,6 +142,7 @@ class Uploader:NSObject,FetcherDelegate,UNUserNotificationCenterDelegate{
                 "response":Fetcher.getResponse(feedback),
             ]);
         }
+        
     }
 
     private func notify(){
@@ -125,7 +153,7 @@ class Uploader:NSObject,FetcherDelegate,UNUserNotificationCenterDelegate{
             content.body="\(length>1 ? "\(length) files":"file") uploaded successfully";
         }
         else if(trackedindex<0){
-            content.body="Uploading \(length>1 ?"\(length) files":Uploader.getFileName(files[0]))";
+            content.body="Uploading \(length>1 ?"\(length+excluded.count) files":Uploader.getFileName(files[0]))";
         }
         else{
             let file=files[trackedindex];

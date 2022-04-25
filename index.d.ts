@@ -52,6 +52,10 @@ interface Fetcher{
         url:string,
         encoding:"form-data",
         /**
+        * Headers object
+        */
+        header?:Object,
+        /**
         * the form-data extra data to append
         * to the form-data body
         */
@@ -69,18 +73,7 @@ interface Fetcher{
         * the upload is successful
         */
         toast?:String,
-        files:{
-            path:String,
-            /**
-            * the file mime type
-            */
-            type?:String,
-            /**
-            * the file new name when uploaded
-            * the string should not include the file extension
-            */
-            newName?:String,
-        }[],
+        files:FetcherFile[],
         /**
         * If true the upload notification will show the upload progress
         * of each file separately otherwise a single progress for all files
@@ -96,19 +89,41 @@ interface Fetcher{
     }):void,
 }
 
+interface FetcherFile {
+    path:String,
+    /**
+    * the file mime type
+    */
+    type?:String,
+    /**
+    * the file new name when uploaded
+    * the string should not include the file extension
+    */
+    newName?:String,
+}
+
 interface FetcherProgressData {
     /**
-    * The upload total progress
-    * An integer between 0 and 100
+    * The upload total progress.
+    * An integer between 0 and 100.
     * Not affected by the value of trackEachFile property
     */
     progress:Number,
     /**
-    * A boolean value that indicates that the progress reached 100%
-    * Please do not used this property to verify that the upload request was successful
+    * A boolean value that indicates that the server finished dealing
+    * with this request.
+    * Please do not used this property to verify that the upload request was successful.
     * Use response&&response.isSuccessful instead
     */
     isFinished:Boolean,
+    /**
+    * Excluded files that could not be uploaded.
+    * Other files will be uploaded normally.
+    * A falsy value is used if none.
+    * Value only available if isFinished true, so make sure you specify this condition
+    * isFinished&&excluded before using the array
+    */
+    excluded?:FetcherFile[],
     response?:FetcherResponse,
 }
 
