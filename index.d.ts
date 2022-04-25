@@ -39,7 +39,7 @@ interface Fetcher{
         * the download progress.
         * default: true
         */
-        notify?:Boolean,//true
+        notify?:Boolean,
         onProgress(data:FetcherProgressData):void,
         onFail(error:{
             message:String,
