@@ -21,11 +21,11 @@ class Uploader:NSObject,FetcherDelegate,UNUserNotificationCenterDelegate{
     };
 
     func upload(onProgress:(([AnyHashable:Any])->Void)?,onFail:(([AnyHashable:Any])->Void)?){
+        self.onFail=onFail;
         if let url=props["url"] as? String {
             self.setFiles();
             if(!self.files.isEmpty){
                 self.onProgress=onProgress;
-                self.onFail=onFail;
                 self.notify();
                 AF.upload(
                     multipartFormData:{[self] in self.setMultipartFormData($0)},
@@ -39,6 +39,9 @@ class Uploader:NSObject,FetcherDelegate,UNUserNotificationCenterDelegate{
                         case .failure:self.onError(feedback);break;
                     } */
                 });
+            }
+            else{
+                self.onFail?(["message":"could not upload any file"]);
             }
         }
         else{
