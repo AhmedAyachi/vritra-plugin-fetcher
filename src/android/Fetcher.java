@@ -60,6 +60,14 @@ public class Fetcher extends CordovaPlugin{
             final WorkRequest request=new OneTimeWorkRequest.Builder(method.equals("download")?Downloader.class:Uploader.class).setInputData(data.build()).build();
             WorkManager.getInstance(Fetcher.context).enqueue(request);   
         }
+        else{
+            try{
+                final JSONObject error=new JSONObject();
+                error.put("message","url attribute is required");
+                callbackContext.error(error);
+            }
+            catch(Exception e){}
+        }
     }
 
     static String getAppName(){

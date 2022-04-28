@@ -2,6 +2,11 @@ declare const Fetcher:Fetcher;
 
 
 interface Fetcher{
+    /**
+    * @Android
+    * System may not be able to open
+    * downloaded file in simultor   
+    */
     download(params:{
         url:String
         /**

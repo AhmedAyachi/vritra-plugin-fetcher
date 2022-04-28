@@ -23,6 +23,8 @@ import android.widget.Toast;
 
 public class Downloader extends Worker{
 
+    private CallbackContext callback=null;
+
     public Downloader(Context context,WorkerParameters params){
         super(context,params);
     }
@@ -34,9 +36,9 @@ public class Downloader extends Worker{
         final String callbackRef=data.getString("callbackRef");
         if(callbackRef!=null){
             try{
-                final CallbackContext callback=(CallbackContext)Fetcher.callbacks.opt(callbackRef);
+                this.callback=(CallbackContext)Fetcher.callbacks.opt(callbackRef);
                 final JSONObject props=new JSONObject(data.getString("props"));
-                this.download(props,callback);
+                this.download(props);
                 isFulfilled=true;
                 Fetcher.callbacks.remove(callbackRef);
             }
@@ -46,7 +48,7 @@ public class Downloader extends Worker{
         return isFulfilled?Result.success():Result.failure();
     }
 
-    private void download(JSONObject props,CallbackContext callback){
+    private void download(JSONObject props){
         try{
             final String url=props.optString("url");
             final DownloadManager downloader=(DownloadManager)Fetcher.cordova.getActivity().getSystemService(Context.DOWNLOAD_SERVICE);
@@ -115,7 +117,7 @@ public class Downloader extends Worker{
                         }
                     }
                     catch(Exception exception){
-                        callback.error(exception.getMessage());
+                        onFail(exception);
                     };
                 }   
             }).start();
@@ -132,8 +134,17 @@ public class Downloader extends Worker{
             },new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)); */
         }
         catch(Exception exception){
-            callback.error(exception.getMessage());
+            onFail(exception);
         }
+    }
+
+    private void onFail(Exception exception){
+        try{
+            final JSONObject error=new JSONObject();
+            error.put("message",exception.getMessage());
+            callback.error(error);
+        }
+        catch(Exception e){}
     }
 
     static void deleteExistingFile(String location,String filename){
