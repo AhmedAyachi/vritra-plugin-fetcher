@@ -52,7 +52,13 @@ class Uploader:NSObject,FetcherDelegate,UNUserNotificationCenterDelegate{
     private func setFiles(){
         if let files=props["files"] as? [[AnyHashable:Any]]{
             for var file in files{
-                if let path=file["path"] as? String {
+                if var path=file["path"] as? String {
+                    if(path.hasPrefix("file:")){
+                        path=path.replacingOccurrences(of:"file:",with:"");
+                    }
+                    while(path.contains("//")){
+                        path=path.replacingOccurrences(of:"//",with:"/");
+                    }
                     let url=URL(fileURLWithPath:path);
                     if let data=try? Data(contentsOf:url){
                         let filename=Uploader.getFileName(file);
@@ -186,7 +192,7 @@ class Uploader:NSObject,FetcherDelegate,UNUserNotificationCenterDelegate{
         center.delegate=self;
         center.add(request,withCompletionHandler:{[self] error in
             if !(error==nil){
-                onFail?(["message":error!.localizedDescription]);
+                self.onFail?(["message":error!.localizedDescription]);
             }
         });
     }
