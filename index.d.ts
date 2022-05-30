@@ -11,9 +11,11 @@ interface Fetcher{
         url:String
         /**
         * The location in which should save the file
-        * defaults:
+        * @default
         * ios: Documents folder
         * android: Download folder
+        * @Android
+        * Location should not be on internal storage
         */
         location?:String,
         /**
