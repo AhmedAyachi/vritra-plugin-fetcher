@@ -63,29 +63,18 @@ interface Fetcher{
         */
         header?:Object,
         /**
-        * the form-data extra data to append
-        * to the form-data body
+        * The form-data fields
         */
         body?:Object,
         /**
-        * the filename key in form-data body
-        * example:
-        * when uploading file to https://file.io
-        * this property should be file
-        * default: filename 
-        */
-        newFileNameKey?:String,
-        /**
-        * a string to use as a toast message when
-        * the upload is successful
+        * A string to use as a toast message when the upload is successful
         */
         toast?:String,
         files:FetcherFile[],
         /**
         * If true the upload notification will show the upload progress
         * of each file separately otherwise a single progress for all files
-        * default: false
-        * @type {Boolean}
+        * @default false
         */
         trackEachFile:Boolean,
         onProgress(data:FetcherProgressData):void,
@@ -99,14 +88,21 @@ interface Fetcher{
 interface FetcherFile {
     path:String,
     /**
-    * the file mime type
+     * file key
+     * @default `file${index}`
+     */
+    key?:String,
+    /**
+    * the file mime type if you wish to specify it otherwise it's determined automatically
+    * @default auto
     */
     type?:String,
     /**
-    * the file new name when uploaded
-    * the string should not include the file extension
-    */
-    newName?:String,
+     * The new uploaded file name.
+     * The string should not include the file extension
+     * @default The file original name
+     */
+    name?:String,
 }
 
 interface FetcherProgressData {
@@ -117,8 +113,7 @@ interface FetcherProgressData {
     */
     progress:Number,
     /**
-    * A boolean value that indicates that the server finished dealing
-    * with this request.
+    * A boolean value that indicates that the server finished dealing with this request.
     * Please do not used this property to verify that the upload request was successful.
     * Use response&&response.isSuccessful instead
     */
