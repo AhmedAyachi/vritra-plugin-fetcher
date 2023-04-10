@@ -7,7 +7,7 @@ interface Fetcher{
     * System may not be able to open
     * downloaded file in simultor   
     */
-    download(params:{
+    download(options:{
         url:String
         /**
         * The location in which should save the file
@@ -15,7 +15,7 @@ interface Fetcher{
         * ios: Documents folder
         * android: Download folder
         * @Android
-        * Location should not be on internal storage
+        * Location should not be on internal storage, only externals
         */
         location?:String,
         /**
@@ -32,7 +32,7 @@ interface Fetcher{
         type?:String,
         /**
         * A string used as a toast message 
-        * when file downloaded
+        * when the file is downloaded
         */
         toast?:String,
         /**
@@ -52,7 +52,7 @@ interface Fetcher{
             message:String,
         }):void,
     }):void;
-    upload(params:{
+    upload(options:{
         /**
         * the target upload url
         */
@@ -77,7 +77,16 @@ interface Fetcher{
         * @default false
         */
         trackEachFile:Boolean,
-        onProgress(data:FetcherProgressData):void,
+        onProgress(data:FetcherProgressData&{
+            /**
+            * Excluded files that could not be uploaded.
+            * Other files will be uploaded normally.
+            * A falsy value is used if none.
+            * Value only available if isFinished true, so make sure you specify this condition
+            * isFinished&&excluded before using the array
+            */
+            excluded?:FetcherFile[],
+        }):void,
         onFail(error:{
             message:String,
             response?:FetcherResponse,
@@ -98,7 +107,7 @@ interface FetcherFile {
     */
     type?:String,
     /**
-     * The new uploaded file name.
+     * The uploaded file new name.
      * The string should not include the file extension
      * @default The file original name
      */
@@ -107,29 +116,20 @@ interface FetcherFile {
 
 interface FetcherProgressData {
     /**
-    * The upload total progress.
-    * An integer between 0 and 100.
-    * Not affected by the value of trackEachFile property
+    * The total progress percentage.
+    * For upload method, the value is not affected by the value of trackEachFile property
     */
     progress:Number,
     /**
     * A boolean value that indicates that the server finished dealing with this request.
     * Please do not used this property to verify that the upload request was successful.
-    * Use response&&response.isSuccessful instead
+    * Use response?.isSuccessful instead
     */
     isFinished:Boolean,
-    /**
-    * Excluded files that could not be uploaded.
-    * Other files will be uploaded normally.
-    * A falsy value is used if none.
-    * Value only available if isFinished true, so make sure you specify this condition
-    * isFinished&&excluded before using the array
-    */
-    excluded?:FetcherFile[],
     response?:FetcherResponse,
 }
 
-interface FetcherResponse{
+interface FetcherResponse {
     /**
     * always an empty string on ios
     */
