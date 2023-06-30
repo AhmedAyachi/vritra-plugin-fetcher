@@ -50,7 +50,7 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
     private NotificationCompat.Builder builder;
     private int id,index=-1,filecount=0;
     private double unit;
-    private Boolean trackEachFile=false;
+    private Boolean trackEachFile=false,notify=true;
 
     public Uploader(Context context,WorkerParameters params){
         super(context,params);
@@ -68,7 +68,10 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
                 this.filecount=files.length();
                 this.unit=100/filecount;
                 if(this.files.length()>0){
-                    this.trackEachFile=props.optBoolean("trackEachFile",false);
+                    this.notify=props.optBoolean("notify",true);
+                    if(this.notify){
+                        this.trackEachFile=props.optBoolean("trackEachFile",false);
+                    }
                     this.upload();
                 }
                 Fetcher.callbacks.remove(callbackRef);
@@ -213,16 +216,20 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
 
     public void onFileStart(File file){
         index++;
-        builder.setContentTitle("Uploading "+file.getName());
-        manager.notify(id,builder.build());
+        if(this.notify){
+            builder.setContentTitle("Uploading "+file.getName());
+            manager.notify(id,builder.build());
+        }
     }
 
     @Override
     public void onFileProgress(int percentage){
         final int progress=(int)((index*unit)+((unit*percentage)/100));
-        builder.setProgress(100,trackEachFile?percentage:progress,false);
-        builder.setContentText((trackEachFile?percentage:progress)+"%");
-        manager.notify(id,builder.build());
+        if(this.notify){
+            builder.setProgress(100,trackEachFile?percentage:progress,false);
+            builder.setContentText((trackEachFile?percentage:progress)+"%");
+            manager.notify(id,builder.build());
+        }
         if(progress<100){
             try{
                 params.put("progress",progress);

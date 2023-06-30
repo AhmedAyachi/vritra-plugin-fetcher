@@ -70,6 +70,12 @@ interface Fetcher{
         * A string to use as a toast message when the upload is successful
         */
         toast?:String,
+        /**
+        * if false, no notification is shown to indicate
+        * the download progress.
+        * default: true
+        */
+        notify?:Boolean,
         files:FetcherFile[],
         /**
         * If true the upload notification will show the upload progress
