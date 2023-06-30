@@ -122,24 +122,29 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
                             }
                         });
                     }
-                    builder.setContentTitle(((filecount>1)?""+filecount+" Files":"File")+" uploaded successfully");
-                    builder.setContentText(null);
-                    builder.setProgress(100,100,false);
-                    builder.setOngoing(false);
-                    manager.notify(id,builder.build());
+                    if(notify){
+                        builder.setContentTitle(((filecount>1)?""+filecount+" Files":"File")+" uploaded successfully");
+                        builder.setContentText(null);
+                        builder.setProgress(100,100,false);
+                        builder.setOngoing(false);
+                        manager.notify(id,builder.build());
+                    }
                     try{
                         params.put("progress",100);
                         params.put("isFinished",true);
                         params.put("response",getJSONObjectResponse(response));
                         params.put("excluded",excluded.length()>0?excluded:null);
                         callback.success(params);
-                        manager.notify(id,builder.build());
+                        if(notify){
+                            manager.notify(id,builder.build());
+                        }
+                        
                     }
                     catch(Exception exception){}
                 }
                 else{
                     try{
-                        manager.cancel(id);
+                        if(notify){manager.cancel(id);};
                         error.put("message","Unknown error");
                         error.put("response",getJSONObjectResponse(response));
                         callback.error(error);
@@ -150,7 +155,7 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
             @Override
             public void onFailure(Call call,Throwable throwable){
                 try{
-                    manager.cancel(id);
+                    if(notify){manager.cancel(id);};
                     error.put("message",throwable.getMessage());
                     callback.error(error);
                 }
