@@ -157,7 +157,9 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
                 catch(Exception e){}
             }
         });
-        this.showNotification();
+        if(this.notify){
+            this.showNotification();
+        }
     }
 
     private Map<String,String> getHeaders(){
