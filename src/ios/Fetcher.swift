@@ -2,7 +2,7 @@ import Foundation;
 import Alamofire;
 
 
-class Fetcher:FetcherPlugin {
+class Fetcher:CordovaPlugin {
 
     static let appname=Bundle.main.infoDictionary?["CFBundleDisplayName" as String] as? String ?? "";
 
