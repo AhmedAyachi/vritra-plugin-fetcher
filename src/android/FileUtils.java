@@ -1,4 +1,4 @@
-package com.ahmedayachi.fetcher;
+package com.corella.fetcher;
 
 import android.annotation.TargetApi;
 import android.content.ContentResolver;

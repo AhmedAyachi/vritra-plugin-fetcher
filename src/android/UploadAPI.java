@@ -1,4 +1,4 @@
-package com.ahmedayachi.fetcher;
+package com.corella.fetcher;
 
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;

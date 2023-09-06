@@ -1,8 +1,8 @@
-package com.ahmedayachi.fetcher;
+package com.corella.fetcher;
 
 import java.io.File;
 
-import com.ahmedayachi.fetcher.Fetcher;
+import com.corella.fetcher.Fetcher;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
 import org.json.JSONObject;

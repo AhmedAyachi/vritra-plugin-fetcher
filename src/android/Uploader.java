@@ -1,10 +1,10 @@
-package com.ahmedayachi.fetcher;
+package com.corella.fetcher;
 
-import com.ahmedayachi.fetcher.Fetcher;
-import com.ahmedayachi.fetcher.UploadAPI;
-import com.ahmedayachi.fetcher.UploaderClient;
-import com.ahmedayachi.fetcher.FileUtils;
-import com.ahmedayachi.fetcher.ProgressRequest;
+import com.corella.fetcher.Fetcher;
+import com.corella.fetcher.UploadAPI;
+import com.corella.fetcher.UploaderClient;
+import com.corella.fetcher.FileUtils;
+import com.corella.fetcher.ProgressRequest;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
 import android.content.Context;

@@ -1,7 +1,7 @@
-package com.ahmedayachi.fetcher;
+package com.corella.fetcher;
 
-import com.ahmedayachi.fetcher.Downloader;
-import com.ahmedayachi.fetcher.Uploader;
+import com.corella.fetcher.Downloader;
+import com.corella.fetcher.Uploader;
 import org.apache.cordova.*;
 import android.content.Context;
 import org.json.JSONArray;

@@ -1,18 +1,18 @@
 {
-  "name": "cordova-plugin-fetcher",
-  "version": "3.1.0",
+  "name": "corella-plugin-fetcher",
+  "version": "0.0.1",
   "main": "www/index.js",
   "types": "index.d.ts",
   "description": "cordova custom plugin fetcher",
   "cordova": {
-    "id": "cordova-plugin-fetcher",
+    "id": "corella-plugin-fetcher",
     "platforms": [
       "android",
       "ios"
     ]
   },
   "keywords": [
-    "cordova-plugin-fetcher",
+    "corella-plugin-fetcher",
     "fetcher"
   ],
   "author": "Ahmed Ayachi",

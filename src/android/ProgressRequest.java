@@ -1,4 +1,4 @@
-package com.ahmedayachi.fetcher;
+package com.corella.fetcher;
 
 import okhttp3.RequestBody;
 import okhttp3.MediaType;

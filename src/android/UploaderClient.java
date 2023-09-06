@@ -1,4 +1,4 @@
-package com.ahmedayachi.fetcher;
+package com.corella.fetcher;
 
 import retrofit2.Retrofit;
 import okhttp3.OkHttpClient;
