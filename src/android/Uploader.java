@@ -107,9 +107,10 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
     }
 
     private void upload() throws Exception {
-        final Retrofit client=UploaderClient.getClient(props.optString("url"));
+        final String url=props.optString("url");
+        final Retrofit client=UploaderClient.getClient(url);
         final UploadAPI api=client.create(UploadAPI.class);
-        final Call call=api.uploadFile(this.getHeaders(),this.getFileParts(),this.getFieldParts());
+        final Call call=api.uploadFile(url,this.getHeaders(),this.getFileParts(),this.getFieldParts());
         call.enqueue(new Callback(){
             @Override
             public void onResponse(Call call,Response response){

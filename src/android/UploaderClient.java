@@ -11,7 +11,9 @@ public class UploaderClient {
     public static Retrofit getClient(String url){
         final OkHttpClient okhttpclient=new OkHttpClient();
         if(retrofit==null){
-            retrofit=new Retrofit.Builder().baseUrl(url).addConverterFactory(GsonConverterFactory.create()).client(okhttpclient).build();
+            retrofit=new Retrofit.Builder().baseUrl(url).
+            addConverterFactory(GsonConverterFactory.create()).
+            client(okhttpclient).build();
         }
         return retrofit;
     } 
