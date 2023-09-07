@@ -16,7 +16,7 @@ public interface UploadAPI {
 
     @Multipart
     @POST
-    Call<ResponseBody> uploadFile(
+    Call<ResponseBody> uploadFiles(
         @Url String url,
         @HeaderMap Map<String,String> headers,
         @Part ArrayList<MultipartBody.Part> files,

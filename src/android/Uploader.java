@@ -16,6 +16,8 @@ import androidx.core.app.NotificationManagerCompat;
 import androidx.core.app.NotificationCompat;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.os.Build;
+import android.net.Uri;
 import android.widget.Toast;
 import org.json.JSONObject;
 import org.json.JSONArray;
@@ -27,8 +29,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Map;
-import android.os.Build;
-import android.net.Uri;
 import okhttp3.ResponseBody;
 import okhttp3.MultipartBody;
 import retrofit2.Retrofit;
@@ -39,7 +39,7 @@ import retrofit2.Response;
 
 public class Uploader extends Worker implements ProgressRequest.UploadCallbacks {
 
-    static final String channelId="FetcherUploaderChannel";
+    static final String channelId="CorellaUploadChannel";
     static Boolean channelCreated=false;
     protected static final NotificationManagerCompat manager=NotificationManagerCompat.from(Fetcher.context);
 
@@ -48,7 +48,8 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
     private final JSONArray excluded=new JSONArray();
     private CallbackContext callback;
     private NotificationCompat.Builder builder;
-    private int id,index=-1,filecount=0;
+    private int index=-1,filecount=0;
+    private Integer notificationId=null;
     private double unit;
     private Boolean trackEachFile=false,notify=true;
 
@@ -110,16 +111,16 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
         final String url=props.optString("url");
         final Retrofit client=UploaderClient.getClient(url);
         final UploadAPI api=client.create(UploadAPI.class);
-        final Call call=api.uploadFile(url,this.getHeaders(),this.getFileParts(),this.getFieldParts());
+        final Call call=api.uploadFiles(url,this.getHeaders(),this.getFileParts(),this.getFieldParts());
         call.enqueue(new Callback(){
             @Override
             public void onResponse(Call call,Response response){
                 if(response.isSuccessful()){
-                    final String message=props.optString("toast",null);
-                    if(message!=null){
+                    final String toastmsg=props.optString("toast",null);
+                    if(toastmsg!=null){
                         Fetcher.cordova.getActivity().runOnUiThread(new Runnable(){
                             public void run(){
-                                Toast.makeText(Fetcher.context,message,Toast.LENGTH_SHORT).show();
+                                Toast.makeText(Fetcher.context,toastmsg,Toast.LENGTH_SHORT).show();
                             }
                         });
                     }
@@ -128,7 +129,7 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
                         builder.setContentText(null);
                         builder.setProgress(100,100,false);
                         builder.setOngoing(false);
-                        manager.notify(id,builder.build());
+                        manager.notify(notificationId,builder.build());
                     }
                     try{
                         params.put("progress",100);
@@ -136,16 +137,14 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
                         params.put("response",getJSONObjectResponse(response));
                         params.put("excluded",excluded.length()>0?excluded:null);
                         callback.success(params);
-                        if(notify){
-                            manager.notify(id,builder.build());
-                        }
+                        if(notify) manager.notify(notificationId,builder.build());
                         
                     }
                     catch(Exception exception){}
                 }
                 else{
                     try{
-                        if(notify){manager.cancel(id);};
+                        if(notify) manager.cancel(notificationId.intValue());
                         error.put("message","Unknown error");
                         error.put("response",getJSONObjectResponse(response));
                         callback.error(error);
@@ -156,7 +155,7 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
             @Override
             public void onFailure(Call call,Throwable throwable){
                 try{
-                    if(notify){manager.cancel(id);};
+                    if(notify) manager.cancel(notificationId.intValue());
                     error.put("message",throwable.getMessage());
                     callback.error(error);
                 }
@@ -226,7 +225,7 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
         index++;
         if(this.notify){
             builder.setContentTitle("Uploading "+file.getName());
-            manager.notify(id,builder.build());
+            manager.notify(notificationId,builder.build());
         }
     }
 
@@ -236,7 +235,7 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
         if(this.notify){
             builder.setProgress(100,trackEachFile?percentage:progress,false);
             builder.setContentText((trackEachFile?percentage:progress)+"%");
-            manager.notify(id,builder.build());
+            manager.notify(notificationId,builder.build());
         }
         if(progress<100){
             try{
@@ -262,15 +261,18 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
 
     private void showNotification(){
         Uploader.createNotificationChannel();
-        id=new Random().nextInt(9999);
+        notificationId=new Random().nextInt(9999);
         builder=new NotificationCompat.Builder(Fetcher.context,channelId);
         builder.setContentTitle((filecount>1)?"Uploading "+(filecount+excluded.length())+" files":"Uploading file");
         builder.setContentText("0%");
         builder.setSmallIcon(Fetcher.context.getApplicationInfo().icon);
         builder.setOngoing(true);
         builder.setOnlyAlertOnce(true);
+        builder.setAutoCancel(true);
         builder.setProgress(100,0,false);
-        manager.notify(id,builder.build());
+        builder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
+        builder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+        manager.notify(notificationId,builder.build());
     }
 
     static private JSONObject getJSONObjectResponse(Response response) throws Exception{
