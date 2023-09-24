@@ -50,8 +50,8 @@
             </pods>
         </podspec> -->
         <dependency 
-            id="cordova-plugin-swift-support" 
-            url="https://github.com/AhmedAyachi/cordova-plugin-swift-support"
+            id="corella-plugin-swift-support" 
+            url="https://github.com/AhmedAyachi/corella-plugin-swift-support"
         />
     </platform>
 
