@@ -1,6 +1,6 @@
 {
   "name": "corella-plugin-fetcher",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "main": "www/index.js",
   "types": "index.d.ts",
   "description": "cordova custom plugin fetcher",
