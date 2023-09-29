@@ -3,41 +3,42 @@ import Alamofire;
 
 class Uploader:NSObject,FetcherDelegate,UNUserNotificationCenterDelegate{
 
-    private let id:String="fetcher\(Int.random(in:0...99999))";
-    private var props:[AnyHashable:Any]=[:];
-    private var files:[[AnyHashable:Any]]=[];
-    private var excluded:[[AnyHashable:Any]]=[];
-    private var onProgress:(([AnyHashable:Any])->Void)?;
-    private var onFail:(([AnyHashable:Any])->Void)?;
+    private var notificationId:String?;
+    private var props:[String:Any]=[:];
+    private var files:[[String:Any]]=[];
+    private var excluded:[[String:Any]]=[];
+    private var onProgress:(([String:Any])->Void)?;
+    private var onFail:(([String:Any])->Void)?;
     private lazy var progress:Int=0;
-    private lazy var trackedindex:Int=(-1); 
-    private var trackedfile:[AnyHashable:Any]?;
+    private lazy var trackedindex:Int=(-1);
     private var totalSize:Int=0;
-    private lazy var unit=100/files.count;
 
-    init(_ props:[AnyHashable:Any]){
+    init(_ props:[String:Any]){
         super.init();
         self.props=props;
     };
 
-    func upload(onProgress:(([AnyHashable:Any])->Void)?,onFail:(([AnyHashable:Any])->Void)?){
+    func upload(onProgress:(([String:Any])->Void)?,onFail:(([String:Any])->Void)?){
         self.onFail=onFail;
         if let url=props["url"] as? String {
             self.setFiles();
+            let notify=props["notify"] as? Bool ?? true;
+            if(notify){
+                self.notificationId="\(Int.random(in:0...99999))";
+            }
             if(!self.files.isEmpty){
                 self.onProgress=onProgress;
                 self.notify();
                 AF.upload(
                     multipartFormData:{[self] in self.setMultipartFormData($0)},
-                    to:url,method:.post,headers:getHeaders()
-                )
-                .uploadProgress(queue:.main,closure:{[self] in self.onUploading($0)})
-                .responseJSON(completionHandler:{[self] feedback in
+                    to:url,
+                    method:.post,
+                    headers:getHeaders()
+                ).uploadProgress(
+                    queue:.main,
+                    closure:{[self] in self.onUploading($0)
+                }).responseJSON(completionHandler:{[self] feedback in
                     self.onResponse(feedback);
-                    /* switch(feedback.result){
-                        case .success:self.onSuccess(feedback);break;
-                        case .failure:self.onError(feedback);break;
-                    } */
                 });
             }
             else{
@@ -50,23 +51,19 @@ class Uploader:NSObject,FetcherDelegate,UNUserNotificationCenterDelegate{
     }
 
     private func setFiles(){
-        if let files=props["files"] as? [[AnyHashable:Any]]{
-            for var file in files{
+        if let files=props["files"] as? [[String:Any]]{
+            for i in 0..<files.count {
+                var file=files[i];
                 if var path=file["path"] as? String {
-                    if(path.hasPrefix("file:")){
-                        path=path.replacingOccurrences(of:"file:",with:"");
-                    }
-                    while(path.contains("//")){
-                        path=path.replacingOccurrences(of:"//",with:"/");
-                    }
+                    if(path.hasPrefix("file:")){path=path.replacingOccurrences(of:"file:",with:"")};
+                    while(path.contains("//")){path=path.replacingOccurrences(of:"//",with:"/")};
                     let url=URL(fileURLWithPath:path);
                     if let data=try? Data(contentsOf:url){
-                        let filename=Uploader.getFileName(file);
-                        file["name"]=filename;
                         let size=(try? url.resourceValues(forKeys:[URLResourceKey.fileSizeKey]).fileSize ?? 1) ?? 1;
-                        self.totalSize+=size;
                         file["size"]=size;
                         file["data"]=data;
+                        file["name"]=Uploader.getFileName(file);
+                        self.totalSize+=size;
                         self.files.append(file);
                     }
                     else{
@@ -91,15 +88,16 @@ class Uploader:NSObject,FetcherDelegate,UNUserNotificationCenterDelegate{
     }
     
     private func setMultipartFormData(_ form:MultipartFormData){
-        let newFileNameKey=props["newFileNameKey"] as? String ?? "filename";
-        self.files.forEach({file in
+        for i in 0..<files.count {
+            let file=files[i];
+            let key=file["key"] as? String ?? "file\(i)";
             form.append(
                 file["data"] as! Data,
-                withName:newFileNameKey,
-                fileName:(file["name"] as! String),
+                withName:key,
+                fileName:Uploader.getFileName(file),
                 mimeType:file["type"] as? String ?? "*/*"
             );
-        });
+        }
         self.setFormDataBody(form);
     }
 
@@ -112,21 +110,19 @@ class Uploader:NSObject,FetcherDelegate,UNUserNotificationCenterDelegate{
     }
 
     private func onUploading(_ progress:Progress){
-        var value=Int(progress.fractionCompleted*100);
-        if(value>=100){
-            value=99;
-        }
-        let length=files.count,index=Int(value/(100/length));
-        if(index<length){
-            self.trackedindex=index;
-            self.trackedfile=files[index];
-            self.progress=value;
-            self.notify();
-        }
+        let value=Int(progress.fractionCompleted*100);
+        let uploadedSize=self.totalSize*value/100;
+        var i:Int = -1,accumulater:Int=0;
+        repeat {
+            i+=1;
+            accumulater+=files[i]["size"] as! Int;
+        } while(accumulater<uploadedSize);
+        self.trackedindex=i;
+        self.progress=value;
+        self.notify();
         self.onProgress?([
             "progress":value,
             "isFinished":false,
-            "response":false,
         ]);
     }
 
@@ -135,45 +131,42 @@ class Uploader:NSObject,FetcherDelegate,UNUserNotificationCenterDelegate{
         let code=response?.statusCode ?? -1;
         if((200...299).contains(code)){
             self.progress=100;
-            self.notify();
             self.onProgress?([
                 "progress":100,
                 "isFinished":true,
+                "notificationId":self.notificationId != nil ? Int(self.notificationId!) : nil,
                 "response":Fetcher.getResponse(feedback),
                 "excluded":self.excluded.count>0 ? self.excluded:false,
             ]);
         }
-        else{
+        else if let notifId=self.notificationId {
             let center=UNUserNotificationCenter.current();
-            center.removeDeliveredNotifications(withIdentifiers:[self.id]);
+            center.removeDeliveredNotifications(withIdentifiers:[notifId]);
             self.onFail?([
                 "message":feedback.error?.localizedDescription ?? "Unknown error",
                 "response":Fetcher.getResponse(feedback),
             ]);
         }
-        
     }
 
-    private func notify(){
-        let length=files.count;
+    private func notify(){if let notifId=self.notificationId {
+        let length=self.files.count;
         let content=UNMutableNotificationContent();
         content.title=Fetcher.appname;
         if(progress>=100){
-            content.body="\(length>1 ? "\(length) files":"file") uploaded successfully";
+            content.body="\(length>1 ? "\(length) files" : "file") uploaded successfully";
         }
         else if(trackedindex<0){
-            content.body="Uploading \(length>1 ?"\(length+excluded.count) files":Uploader.getFileName(files[0]))";
+            content.body="Uploading \(length>1 ? "\(length+excluded.count) files" : self.files[0]["name"]!)";
         }
         else{
             let file=files[trackedindex];
             let trackEachFile=props["trackEachFile"] as? Bool ?? false;
             if(trackEachFile&&(length>1)){
-                let size=file["size"] as? Int ?? 1;
+                let size=file["size"] as! Int;
                 var overflow=0;
-                for i in 0..<files.count {
-                    if(i<trackedindex){
-                        overflow+=files[i]["size"] as? Int ?? 0;
-                    }
+                for i in 0..<trackedindex {
+                    overflow+=self.files[i]["size"] as! Int;
                 }
                 let downloaded=progress*totalSize/100;
                 content.subtitle="\((downloaded-overflow)*100/size)%";
@@ -184,34 +177,34 @@ class Uploader:NSObject,FetcherDelegate,UNUserNotificationCenterDelegate{
             content.body="Uploading \(file["name"] ?? "file")";
         }
         let request=UNNotificationRequest(
-            identifier:self.id,
+            identifier:notifId,
             content:content,
             trigger:nil
         );
         let center=UNUserNotificationCenter.current();
         center.delegate=self;
         center.add(request,withCompletionHandler:{[self] error in
-            if !(error==nil){
+            if(error != nil){
                 self.onFail?(["message":error!.localizedDescription]);
             }
         });
-    }
+    }}
 
     func userNotificationCenter(_ center:UNUserNotificationCenter,willPresent notification:UNNotification,withCompletionHandler completionHandler:@escaping(UNNotificationPresentationOptions)->Void){
-        center.getDeliveredNotifications{[self] notifications in 
-            if(!notifications.contains(where:{notification in notification.request.identifier==self.id})){
-                completionHandler([.alert,.badge,.sound]);   
+        center.getDeliveredNotifications{[self] notifications in
+            if(!notifications.contains(where:{notification in notification.request.identifier==self.notificationId})){
+                completionHandler([.alert,.badge,.sound]);
             }
         };
     }
 
-    static func getFileName(_ file:[AnyHashable:Any])->String{
+    static func getFileName(_ file:[String:Any],_ original:Bool=false)->String{
         var filename:String?;
         let path=file["path"] as? String ?? "";
         if(!path.isEmpty){
-            let url=URL(fileURLWithPath:path)
-            filename=file["newName"] as? String;
-            filename=filename==nil ? url.lastPathComponent:"\(filename!).\(Fetcher.getExtension(url.lastPathComponent))";
+            var basename:String?=original ? nil : file["withBaseName"] as? String;
+            let url=URL(fileURLWithPath:path);
+            filename=basename==nil ? url.lastPathComponent : "\(basename!).\(Fetcher.getExtension(url.lastPathComponent))";
         };
         return filename ?? "";
     }

@@ -27,7 +27,7 @@ class Fetcher:CordovaPlugin {
     }
 
     private func fetch(_ command:CDVInvokedUrlCommand,_ mode:String="download")throws{
-        if let props=command.arguments[0] as? [AnyHashable:Any],!((props["url"] as? String)==nil){
+        if let props=command.arguments[0] as? [String:Any],!((props["url"] as? String)==nil){
             Fetcher.askPermissions({[self] granted,data in
                 if(granted){
                     self.commandDelegate?.run(inBackground:{[self] in
@@ -48,7 +48,7 @@ class Fetcher:CordovaPlugin {
         }
     }
     
-    private func onProgress(_ command:CDVInvokedUrlCommand,_ params:[AnyHashable:Any],_ props:[AnyHashable:Any]){
+    private func onProgress(_ command:CDVInvokedUrlCommand,_ params:[String:Any],_ props:[String:Any]){
         let isFinished=params["isFinished"] as? Bool ?? false;
         if isFinished,let message=props["toast"] as? String {
             self.toast(message);
@@ -56,7 +56,7 @@ class Fetcher:CordovaPlugin {
         self.success(command,params,NSNumber(value:!isFinished));
     }
 
-    private func onFail(_ command:CDVInvokedUrlCommand,_ error:[AnyHashable:Any]){
+    private func onFail(_ command:CDVInvokedUrlCommand,_ error:[String:Any]){
         self.error(command,error);
     };
     
@@ -87,9 +87,7 @@ class Fetcher:CordovaPlugin {
     static func getExtension(_ path:String,_ separator:String=".")->String{
         let parts=path.split(separator:separator.first ?? ".");
         var ext=parts.count>1 ? String(parts.last!) :"";
-        if(ext.isEmpty){
-            ext="tmp";
-        }
+        if(ext.isEmpty){ext="tmp"};
         return ext;
     }
 
@@ -113,7 +111,7 @@ class Fetcher:CordovaPlugin {
         let code=response?.statusCode ?? -1;
         var res:[String:Any]=[
             "protocol":"",
-            "code":code<0 ? false:code,
+            "code":code<0 ? false : code,
             "message":feedback.error?.localizedDescription ?? "",
             "url":response?.url?.absoluteString ?? false,
             "isSuccessful":(200...299).contains(code),
@@ -125,21 +123,9 @@ class Fetcher:CordovaPlugin {
         };
         return res;
     }
-
-    /* static func getResponse(_ error:Error)->[String:Any]{
-        var response:[String:Any]=[
-            "protocol":false,
-            "code":false,
-            "message":"",
-            "url":response?.url?.absoluteString ?? false,
-            "isSuccessful":(200...299).contains(code),
-            "body":false,
-        ];
-        return response;
-    } */
 }
 
 @objc protocol FetcherDelegate {
-    @objc optional func download(onProgress:(([AnyHashable:Any])->Void)?,onFail:(([AnyHashable:Any])->Void)?);
-    @objc optional func upload(onProgress:(([AnyHashable:Any])->Void)?,onFail:(([AnyHashable:Any])->Void)?);
+    @objc optional func download(onProgress:(([String:Any])->Void)?,onFail:(([String:Any])->Void)?);
+    @objc optional func upload(onProgress:(([String:Any])->Void)?,onFail:(([String:Any])->Void)?);
 } 

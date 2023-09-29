@@ -1,53 +1,63 @@
 declare const Fetcher:Fetcher;
 
 
-interface Fetcher{
+interface Fetcher {
     /**
     * @Android
     * System may not be able to open
     * downloaded file in simultor   
     */
     download(options:{
-        url:String
+        url:string,
         /**
         * The location in which should save the file
         * @default
-        * ios: Documents folder
-        * android: Download folder
+        * Android: Download folder
+        * iOS: FileManager.SearchPathDirectory.cachesDirectory
         * @Android
         * Location should not be on internal storage, only externals
         */
-        location?:String,
-        /**
-        * The new downloaded file name without the extension
-        * If a file with this name already exists:
-        * the string " (<random-int>)" is used as a suffix
-        * default: <the app name>
-        */
-        filename?:String,
+        location?:string,
         /**
         * the file mime type
         * required in some requests
         */
-        type?:String,
+        type?:string,
         /**
-        * A string used as a toast message 
-        * when the file is downloaded
+        * The new downloaded file base name (without the extension)
+        * If a file with this name already exists,
+        * the string "_\<random_int>" is used as a suffix
+        * default: <the app name>
         */
-        toast?:String,
+        withBaseName?:string,
         /**
         * If true and a file already exists in the location specified
         * with the given filename property, that file will be replaced
         * default: false
         */
-        overwrite?:Boolean,
+        overwrite?:boolean,
+        /**
+        * A string used as a toast message 
+        * when the file is downloaded
+        */
+        toast?:string,
         /**
         * if false, no notification is shown to indicate
         * the download progress.
         * default: true
         */
-        notify?:Boolean,
-        onProgress(data:FetcherProgressData):void,
+        notify?:boolean,
+        /**
+         * If true, the image is saved to the user's gallery.
+         * @default false
+         */
+        saveToUserGallery?:boolean,
+        onProgress(data:FetcherProgressData&{
+            /**
+             * Downloaded file entry. Only set when the file has been downloaded. 
+             */
+            entry?:{name:String,fullpath:String,},
+        }):void,
         onFail(error:{
             message:String,
         }):void,
@@ -69,20 +79,20 @@ interface Fetcher{
         /**
         * A string to use as a toast message when the upload is successful
         */
-        toast?:String,
+        toast?:string,
         /**
         * if false, no notification is shown to indicate
         * the download progress.
         * default: true
         */
-        notify?:Boolean,
+        notify?:boolean,
         files:FetcherFile[],
         /**
         * If true the upload notification will show the upload progress
         * of each file separately otherwise a single progress for all files
         * @default false
         */
-        trackEachFile:Boolean,
+        trackEachFile:boolean,
         onProgress(data:FetcherProgressData&{
             /**
             * Excluded files that could not be uploaded.
@@ -108,16 +118,15 @@ interface FetcherFile {
      */
     key?:String,
     /**
-    * the file mime type if you wish to specify it otherwise it's determined automatically
-    * @default auto
+    * the file mime type if you wish to specify it otherwise it's determined automatically.
     */
     type?:String,
     /**
-     * The uploaded file new name.
-     * The string should not include the file extension
-     * @default The file original name
+     * The uploaded file new base name (without extension).
+     * Default to its original name.
+     * @notice The string should not include the file extension
      */
-    name?:String,
+    withBaseName?:String,
 }
 
 interface FetcherProgressData {
@@ -132,6 +141,13 @@ interface FetcherProgressData {
     * Use response?.isSuccessful instead
     */
     isFinished:Boolean,
+    /**
+     * Upload/Download notification identifier
+     * 
+     * Available when the request is finished and notify option is true
+     * @notice to be dismised using corella-plugin-notifier
+     */
+    notificationId?:Number|null,
     response?:FetcherResponse,
 }
 
