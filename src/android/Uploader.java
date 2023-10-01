@@ -47,7 +47,7 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
     private final JSONArray files=new JSONArray();
     private final JSONArray excluded=new JSONArray();
     private CallbackContext callback;
-    private NotificationCompat.Builder builder;
+    private NotificationCompat.Builder notifBuilder;
     private int index=-1,filecount=0;
     private Integer notificationId=null;
     private double unit;
@@ -68,7 +68,7 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
                 this.setFiles();
                 this.filecount=files.length();
                 this.unit=100/filecount;
-                if(this.files.length()>0){
+                if(files.length()>0){
                     this.notify=props.optBoolean("notify",true);
                     if(this.notify){
                         this.trackEachFile=props.optBoolean("trackEachFile",false);
@@ -125,19 +125,20 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
                         });
                     }
                     if(notify){
-                        builder.setContentTitle(((filecount>1)?""+filecount+" Files":"File")+" uploaded successfully");
-                        builder.setContentText(null);
-                        builder.setProgress(100,100,false);
-                        builder.setOngoing(false);
-                        manager.notify(notificationId,builder.build());
+                        notifBuilder.setContentTitle(((filecount>1)?""+filecount+" Files":"File")+" uploaded successfully");
+                        notifBuilder.setContentText(null);
+                        notifBuilder.setProgress(100,100,false);
+                        notifBuilder.setOngoing(false);
+                        manager.notify(notificationId,notifBuilder.build());
                     }
                     try{
                         params.put("progress",100);
                         params.put("isFinished",true);
+                        params.put("notificationId",notificationId);
                         params.put("response",getJSONObjectResponse(response));
                         params.put("excluded",excluded.length()>0?excluded:null);
                         callback.success(params);
-                        if(notify) manager.notify(notificationId,builder.build());
+                        if(notify) manager.notify(notificationId,notifBuilder.build());
                         
                     }
                     catch(Exception exception){}
@@ -196,7 +197,7 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
             }
             final ProgressRequest fileRequest=new ProgressRequest(this,type,file);
             final String key=fileProps.optString("key","file"+i);
-            final String filename=fileProps.optString("name",file.getName());
+            final String filename=fileProps.optString("withBaseName",file.getName());
             final MultipartBody.Part filePart=MultipartBody.Part.createFormData(key,filename,fileRequest);
             fileParts.add(filePart);
         }
@@ -224,8 +225,8 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
     public void onFileStart(File file){
         index++;
         if(this.notify){
-            builder.setContentTitle("Uploading "+file.getName());
-            manager.notify(notificationId,builder.build());
+            notifBuilder.setContentTitle("Uploading "+file.getName());
+            manager.notify(notificationId,notifBuilder.build());
         }
     }
 
@@ -233,9 +234,9 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
     public void onFileProgress(int percentage){
         final int progress=(int)((index*unit)+((unit*percentage)/100));
         if(this.notify){
-            builder.setProgress(100,trackEachFile?percentage:progress,false);
-            builder.setContentText((trackEachFile?percentage:progress)+"%");
-            manager.notify(notificationId,builder.build());
+            notifBuilder.setProgress(100,trackEachFile?percentage:progress,false);
+            notifBuilder.setContentText((trackEachFile?percentage:progress)+"%");
+            manager.notify(notificationId,notifBuilder.build());
         }
         if(progress<100){
             try{
@@ -262,17 +263,17 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
     private void showNotification(){
         Uploader.createNotificationChannel();
         notificationId=new Random().nextInt(9999);
-        builder=new NotificationCompat.Builder(Fetcher.context,channelId);
-        builder.setContentTitle((filecount>1)?"Uploading "+(filecount+excluded.length())+" files":"Uploading file");
-        builder.setContentText("0%");
-        builder.setSmallIcon(Fetcher.context.getApplicationInfo().icon);
-        builder.setOngoing(true);
-        builder.setOnlyAlertOnce(true);
-        builder.setAutoCancel(true);
-        builder.setProgress(100,0,false);
-        builder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
-        builder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
-        manager.notify(notificationId,builder.build());
+        notifBuilder=new NotificationCompat.Builder(Fetcher.context,channelId);
+        notifBuilder.setContentTitle((filecount>1)?"Uploading "+(filecount+excluded.length())+" files":"Uploading file");
+        notifBuilder.setContentText("0%");
+        notifBuilder.setSmallIcon(Fetcher.context.getApplicationInfo().icon);
+        notifBuilder.setOngoing(true);
+        notifBuilder.setOnlyAlertOnce(true);
+        notifBuilder.setAutoCancel(true);
+        notifBuilder.setProgress(100,0,false);
+        notifBuilder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
+        notifBuilder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+        manager.notify(notificationId,notifBuilder.build());
     }
 
     static private JSONObject getJSONObjectResponse(Response response) throws Exception{

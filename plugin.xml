@@ -24,13 +24,13 @@
             <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
             <uses-permission android:name="android.permission.DOWNLOAD_WITHOUT_NOTIFICATION"/>
         </config-file>
-        <source-file src="src/android/Fetcher.java" target-dir="src/com/corella/fetcher/Fetcher"/>
-        <source-file src="src/android/Uploader.java" target-dir="src/com/corella/fetcher/Fetcher"/>
-        <source-file src="src/android/UploaderClient.java" target-dir="src/com/corella/fetcher/Fetcher"/>
-        <source-file src="src/android/UploadAPI.java" target-dir="src/com/corella/fetcher/Fetcher"/>
-        <source-file src="src/android/FileUtils.java" target-dir="src/com/corella/fetcher/Fetcher"/>
-        <source-file src="src/android/ProgressRequest.java" target-dir="src/com/corella/fetcher/Fetcher"/>
-        <source-file src="src/android/Downloader.java" target-dir="src/com/corella/fetcher/Fetcher"/>
+        <source-file src="src/android/Fetcher.java" target-dir="src/com/corella/Fetcher"/>
+        <source-file src="src/android/Uploader.java" target-dir="src/com/corella/Fetcher"/>
+        <source-file src="src/android/UploaderClient.java" target-dir="src/com/corella/Fetcher"/>
+        <source-file src="src/android/UploadAPI.java" target-dir="src/com/corella/Fetcher"/>
+        <source-file src="src/android/FileUtils.java" target-dir="src/com/corella/Fetcher"/>
+        <source-file src="src/android/ProgressRequest.java" target-dir="src/com/corella/Fetcher"/>
+        <source-file src="src/android/Downloader.java" target-dir="src/com/corella/Fetcher"/>
         <framework src="src/android/build.gradle" custom="true" type="gradleReference"/>
     </platform>
 

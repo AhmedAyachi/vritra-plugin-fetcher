@@ -3,7 +3,7 @@ declare const Fetcher:Fetcher;
 
 interface Fetcher {
     /**
-    * @Android
+    * @android
     * System may not be able to open
     * downloaded file in simultor   
     */
@@ -12,17 +12,12 @@ interface Fetcher {
         /**
         * The location in which should save the file
         * @default
-        * Android: Download folder
+        * Android: context.getExternalCacheDir()
         * iOS: FileManager.SearchPathDirectory.cachesDirectory
-        * @Android
+        * @android
         * Location should not be on internal storage, only externals
         */
         location?:string,
-        /**
-        * the file mime type
-        * required in some requests
-        */
-        type?:string,
         /**
         * The new downloaded file base name (without the extension)
         * If a file with this name already exists,
@@ -31,9 +26,9 @@ interface Fetcher {
         */
         withBaseName?:string,
         /**
-        * If true and a file already exists in the location specified
-        * with the given filename property, that file will be replaced
-        * default: false
+        * If true and a file with th same name already exists in the location specified
+        * then that file is replaced
+        * @default false
         */
         overwrite?:boolean,
         /**
@@ -48,16 +43,11 @@ interface Fetcher {
         */
         notify?:boolean,
         /**
-         * If true, the image is saved to the user's gallery.
+         * If true, the downloaded file is saved to the user's gallery.
          * @default false
          */
         saveToUserGallery?:boolean,
-        onProgress(data:FetcherProgressData&{
-            /**
-             * Downloaded file entry. Only set when the file has been downloaded. 
-             */
-            entry?:{name:String,fullpath:String,},
-        }):void,
+        onProgress(data:FetcherDownloadData):void,
         onFail(error:{
             message:String,
         }):void,
@@ -93,16 +83,7 @@ interface Fetcher {
         * @default false
         */
         trackEachFile:boolean,
-        onProgress(data:FetcherProgressData&{
-            /**
-            * Excluded files that could not be uploaded.
-            * Other files will be uploaded normally.
-            * A falsy value is used if none.
-            * Value only available if isFinished true, so make sure you specify this condition
-            * isFinished&&excluded before using the array
-            */
-            excluded?:FetcherFile[],
-        }):void,
+        onProgress(data:FetcherUploadData):void,
         onFail(error:{
             message:String,
             response?:FetcherResponse,
@@ -129,7 +110,32 @@ interface FetcherFile {
     withBaseName?:String,
 }
 
-interface FetcherProgressData {
+type FetcherDownloadData=FetcherData&{
+    /**
+     * Downloaded file entry. Only set when the file has been downloaded. 
+     */
+    entry?:{name:String,fullpath:String},
+};
+
+type FetcherUploadData=FetcherData&{
+    /**
+    * Excluded files that could not be uploaded.
+    * Other files will be uploaded normally.
+    * A falsy value is used if none.
+    * Value only available if isFinished true, so make sure you specify this condition
+    * isFinished&&excluded before using the array
+    */
+    excluded?:FetcherFile[],
+    /**
+     * Upload/Download notification identifier
+     * 
+     * Available when the request is finished and notify option is true
+     * @notice to be dismised using corella-plugin-notifier
+     */
+    notificationId?:Number|null,
+};
+
+interface FetcherData {
     /**
     * The total progress percentage.
     * For upload method, the value is not affected by the value of trackEachFile property
@@ -141,13 +147,6 @@ interface FetcherProgressData {
     * Use response?.isSuccessful instead
     */
     isFinished:Boolean,
-    /**
-     * Upload/Download notification identifier
-     * 
-     * Available when the request is finished and notify option is true
-     * @notice to be dismised using corella-plugin-notifier
-     */
-    notificationId?:Number|null,
     response?:FetcherResponse,
 }
 

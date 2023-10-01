@@ -1,7 +1,5 @@
 package com.corella.fetcher;
 
-import java.io.File;
-
 import com.corella.fetcher.Fetcher;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
@@ -11,19 +9,25 @@ import androidx.work.WorkerParameters;
 import androidx.work.ListenableWorker.Result;
 import androidx.work.Data;
 import android.content.Context;
-import android.content.Intent;
 import android.app.DownloadManager;
 import android.net.Uri;
-import android.content.BroadcastReceiver;
-import android.content.IntentFilter;
-import android.os.Environment;
 import android.database.Cursor;
+import android.os.Environment;
 import android.widget.Toast;
+import java.io.File;
+import java.util.Random;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.nio.channels.FileChannel;
 
 
-public class Downloader extends Worker{
+
+public class Downloader extends Worker {
 
     private CallbackContext callback=null;
+    private DownloadManager downloadManager=null;
+    private final String publicDirName=Environment.DIRECTORY_DOWNLOADS;
+    private final JSONObject file=new JSONObject();
 
     public Downloader(Context context,WorkerParameters params){
         super(context,params);
@@ -51,62 +55,73 @@ public class Downloader extends Worker{
     private void download(JSONObject props){
         try{
             final String url=props.optString("url");
-            final DownloadManager downloader=(DownloadManager)Fetcher.cordova.getActivity().getSystemService(Context.DOWNLOAD_SERVICE);
             final Uri uri=Uri.parse(url);
-            final DownloadManager.Request request=new DownloadManager.Request(uri);
+
             final String extension=Fetcher.getExtension(url);
-            final String filename=props.optString("filename",Fetcher.getAppName().replaceAll(" ",""))+"."+extension;
-            request.setTitle(filename);
-            final String type=props.optString("type",extension);
-            request.setMimeType(type);
-            request.setDescription("Downloding");
-            final Boolean notify=props.optBoolean("notify",true);
-            request.setNotificationVisibility(notify?DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED:DownloadManager.Request.VISIBILITY_HIDDEN);
-            final String location=props.optString("location",null);
-            if(location!=null){
-                request.setDestinationUri(Uri.parse(location+"/"+filename));
+            String filename=null;
+            String basename=props.optString("withBaseName",null);
+            if(basename==null){
+                filename=uri.getLastPathSegment();
+                basename=filename.substring(0,filename.lastIndexOf("."));
             }
             else{
-                request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,"/"+filename);
+                filename=basename+"."+extension;
             }
-            request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI|DownloadManager.Request.NETWORK_MOBILE);
-            final Boolean overwrite=props.optBoolean("overwrite",false);
-            if(overwrite){
-                Downloader.deleteExistingFile(location,filename);
-            }
+            final String location=this.getLocationProp(props);
+            final File sysfile=new File(location+"/"+filename);
+            if(sysfile.exists()){
+                final Boolean overwrite=props.optBoolean("overwrite",false);
+                if(overwrite) sysfile.delete();
+                else{
+                    basename=basename+"_"+new Random().nextInt(10000);
+                    filename=basename+"."+extension;
+                }
+            };
+            final String fullpath="file://"+location+File.separator+filename;
+            file.put("name",filename);
+            file.put("location",location);
+            file.put("fullpath",fullpath);
 
-            final long downloadId=downloader.enqueue(request);
-            final JSONObject params=new JSONObject();
-            try{
-                params.put("progress",0);
-                params.put("isFinished",false);
-            }
-            catch(Exception exception){};
+            this.downloadManager=(DownloadManager)Fetcher.cordova.getActivity().getSystemService(Context.DOWNLOAD_SERVICE);
+            final DownloadManager.Request request=new DownloadManager.Request(uri);
+            request.setTitle(filename);
+            request.setMimeType(extension);
+            request.setDescription("Downloading "+filename);
+            final Boolean notify=props.optBoolean("notify",true);
+            request.setNotificationVisibility(notify?DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED:DownloadManager.Request.VISIBILITY_HIDDEN);
+            final Boolean saveToUserGallery=props.optBoolean("saveToUserGallery",false);
+            file.put("savedToUserGallery",saveToUserGallery);
+            if(saveToUserGallery) request.setDestinationInExternalPublicDir(this.publicDirName,File.separator+filename);
+            else request.setDestinationUri(Uri.parse(fullpath));
+            request.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI|DownloadManager.Request.NETWORK_MOBILE);
+            request.allowScanningByMediaScanner();
+
+            final long downloadId=downloadManager.enqueue(request);
             new Thread(new Runnable(){
                 public void run(){
                     try{
-                        Boolean isFinished=false;
+                        double progress=0;
                         final DownloadManager.Query query=new DownloadManager.Query();
                         query.setFilterById(downloadId);
-                        while(!isFinished){
-                            final Cursor cursor=downloader.query(query);
+                        while(progress<100){
+                            Thread.sleep(50);
+                            final Cursor cursor=downloadManager.query(query);
                             if(cursor.moveToFirst()){
-                                final long total=cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
-                                if(total>0){
-                                    final int downloaded=cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
-                                    final double progress=(double)(100*downloaded)/total;
-                                    isFinished=progress>=100;
-                                    params.put("progress",progress);
-                                    params.put("isFinished",isFinished);
-                                    final PluginResult result=new PluginResult(PluginResult.Status.OK,params);
-                                    result.setKeepCallback(!isFinished);
-                                    callback.sendPluginResult(result);
+                                final int downloadStatus=cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS));
+                                if(downloadStatus==DownloadManager.STATUS_FAILED){
+                                    onFail(new Exception("Download failed"));
+                                }
+                                else{
+                                    final long total=cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES));
+                                    if(total>0){
+                                        final int downloaded=cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR));
+                                        progress=(double)(100*downloaded)/total;
+                                    }
+                                    onProgress(progress);
                                 }
                             }
                             cursor.close();
-                            Thread.sleep(100);
                         }
-
                         final String toast=props.optString("toast",null);
                         if(toast!=null){
                             Fetcher.cordova.getActivity().runOnUiThread(new Runnable(){
@@ -121,25 +136,36 @@ public class Downloader extends Worker{
                     };
                 }   
             }).start();
-            /* Fetcher.context.registerReceiver(new BroadcastReceiver(){
-                @Override
-                public void onReceive(Context context,Intent intent){
-                    try{
-                        params.put("isFinished",true);
-                        params.put("progress",100);
-                        callback.success(params);
-                    }
-                    catch(Exception exception){}
-                }
-            },new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)); */
         }
         catch(Exception exception){
             onFail(exception);
         }
     }
 
+    private void onProgress(double progress) throws Exception {
+        final Boolean isFinished=progress>=100;
+        final JSONObject params=new JSONObject();
+        params.put("progress",progress);
+        params.put("isFinished",isFinished);
+        if(isFinished){
+            final String filename=file.optString("name");
+            final String srcPath=Environment.getExternalStoragePublicDirectory(this.publicDirName).getPath()+File.separator+filename;
+            final String dstPath=file.optString("location")+File.separator+filename;
+            if((!file.optBoolean("savedToUserGallery"))||Downloader.copyFile(srcPath,dstPath)){
+                final JSONObject entry=new JSONObject();
+                entry.put("name",filename);
+                entry.put("fullpath",file.optString("fullpath"));
+                params.put("entry",entry);
+            }
+        };
+        final PluginResult result=new PluginResult(PluginResult.Status.OK,params);
+        result.setKeepCallback(!isFinished);
+        callback.sendPluginResult(result);
+    }
+
     private void onFail(Exception exception){
         try{
+            this.downloadManager.remove();
             final JSONObject error=new JSONObject();
             error.put("message",exception.getMessage());
             callback.error(error);
@@ -147,16 +173,45 @@ public class Downloader extends Worker{
         catch(Exception e){}
     }
 
-    static void deleteExistingFile(String location,String filename){
-        if(location==null){
-            location=Environment.getExternalStorageDirectory().getPath()+"/"+Environment.DIRECTORY_DOWNLOADS;
-        }
+    String getLocationProp(JSONObject props){
+        String location=props.optString("location",Fetcher.context.getExternalCacheDir().getPath());
         if(location.startsWith("file://")){
             location=location.substring(7);
         }
-        final File file=new File(location+"/"+filename);
-        if(file.exists()){
-            file.delete();
+        return location;
+    }
+
+    static Boolean copyFile(String srcPath,String dstPath){
+        try{
+            return Downloader.copyFile(srcPath,dstPath,true);
         }
+        catch(Exception exception){
+            return true;
+        }
+    }
+    static Boolean copyFile(String srcPath,String dstPath,Boolean reattempt) throws Exception {
+        Boolean successful=false;
+        FileInputStream inputStream=null;
+        FileOutputStream outputStream=null;
+        try{
+            final File srcfile=new File(srcPath);
+            final File dstfile=new File(dstPath);
+            inputStream=new FileInputStream(srcfile);
+            outputStream=new FileOutputStream(dstfile);
+            final FileChannel inputChannel=inputStream.getChannel();
+            final FileChannel outputChannel=outputStream.getChannel();
+            inputChannel.transferTo(0,inputChannel.size(),outputChannel);
+            successful=true;
+        }
+        catch(Exception exception){
+            if(reattempt){
+                successful=Downloader.copyFile(srcPath,dstPath,false);
+            };
+        }
+        finally{
+            inputStream.close();
+            outputStream.close();
+        }
+        return successful;
     }
 }

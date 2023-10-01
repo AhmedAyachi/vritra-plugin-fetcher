@@ -16,7 +16,7 @@ import androidx.work.Data;
 import java.util.StringTokenizer;
 
 
-public class Fetcher extends CordovaPlugin{
+public class Fetcher extends CordovaPlugin {
 
     static protected Context context;
     static protected CordovaInterface cordova;
@@ -70,24 +70,21 @@ public class Fetcher extends CordovaPlugin{
         }
     }
 
-    static String getAppName(){
+    /* static String getAppName(){
         String name=null;
         try{
             name=context.getApplicationInfo().loadLabel(context.getPackageManager()).toString();
         }
         catch(Exception exception){
-            name="appname";
+            name="AppName";
         }
         return name;
-    }
+    } */
 
     static String getExtension(String url){
-        final StringTokenizer tokenizer=new StringTokenizer(url,".");
-        String extension="";
-        while(tokenizer.hasMoreTokens()){
-            extension=tokenizer.nextToken();
-        }
-        return extension;
+        final int urlParamIndex=url.lastIndexOf("?");
+        final int pointIndex=url.lastIndexOf(".");
+        return urlParamIndex>pointIndex?url.substring(pointIndex+1,urlParamIndex):url.substring(pointIndex+1);
     }
     
     static protected int getResourceId(String type,String name){

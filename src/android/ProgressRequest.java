@@ -11,7 +11,7 @@ import java.io.File;
 import java.io.IOException;
 
 
-public class ProgressRequest extends RequestBody{
+public class ProgressRequest extends RequestBody {
 
     private File file;
     private String type;
