@@ -1,7 +1,7 @@
-package com.corella.fetcher;
+package com.wurm.fetcher;
 
-import com.corella.fetcher.Downloader;
-import com.corella.fetcher.Uploader;
+import com.wurm.fetcher.Downloader;
+import com.wurm.fetcher.Uploader;
 import org.apache.cordova.*;
 import android.content.Context;
 import org.json.JSONArray;

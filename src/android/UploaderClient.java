@@ -1,4 +1,4 @@
-package com.corella.fetcher;
+package com.wurm.fetcher;
 
 import retrofit2.Retrofit;
 import okhttp3.OkHttpClient;

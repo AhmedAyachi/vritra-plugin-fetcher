@@ -1,20 +1,21 @@
 {
-  "name": "corella-plugin-fetcher",
-  "version": "0.0.3",
+  "name": "wurm-plugin-fetcher",
+  "version": "0.0.1",
+  "description": "A cordova plugin for file download/upload",
   "main": "www/index.js",
   "types": "index.d.ts",
-  "description": "cordova custom plugin fetcher",
-  "cordova": {
-    "id": "corella-plugin-fetcher",
+    "cordova": {
+    "id": "wurm-plugin-fetcher",
     "platforms": [
       "android",
       "ios"
     ]
   },
   "keywords": [
-    "corella-plugin-fetcher",
-    "fetcher"
+    "wurm-plugin-fetcher",
+    "fetcher","cordova",
+    "download","upload","files"
   ],
   "author": "Ahmed Ayachi",
-  "license": "ISC"
+  "license": "MIT"
 }

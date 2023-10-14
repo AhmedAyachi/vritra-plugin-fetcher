@@ -1,10 +1,10 @@
-package com.corella.fetcher;
+package com.wurm.fetcher;
 
-import com.corella.fetcher.Fetcher;
-import com.corella.fetcher.UploadAPI;
-import com.corella.fetcher.UploaderClient;
-import com.corella.fetcher.FileUtils;
-import com.corella.fetcher.ProgressRequest;
+import com.wurm.fetcher.Fetcher;
+import com.wurm.fetcher.UploadAPI;
+import com.wurm.fetcher.UploaderClient;
+import com.wurm.fetcher.FileUtils;
+import com.wurm.fetcher.ProgressRequest;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
 import android.content.Context;
@@ -39,7 +39,7 @@ import retrofit2.Response;
 
 public class Uploader extends Worker implements ProgressRequest.UploadCallbacks {
 
-    static final String channelId="CorellaUploadChannel";
+    static final String channelId="WurmUploadChannel";
     static Boolean channelCreated=false;
     protected static final NotificationManagerCompat manager=NotificationManagerCompat.from(Fetcher.context);
 

@@ -1,4 +1,4 @@
-package com.corella.fetcher;
+package com.wurm.fetcher;
 
 import android.annotation.TargetApi;
 import android.content.ContentResolver;

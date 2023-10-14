@@ -1,6 +1,6 @@
-package com.corella.fetcher;
+package com.wurm.fetcher;
 
-import com.corella.fetcher.Fetcher;
+import com.wurm.fetcher.Fetcher;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
 import org.json.JSONObject;

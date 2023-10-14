@@ -1,4 +1,4 @@
-package com.corella.fetcher;
+package com.wurm.fetcher;
 
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
