@@ -130,7 +130,7 @@ type FetcherUploadData=FetcherData&{
      * Upload/Download notification identifier
      * 
      * Available when the request is finished and notify option is true
-     * @notice to be dismised using wurm-plugin-notifier
+     * @notice to be dismised using vritra-plugin-notifier
      */
     notificationId?:Number|null,
 };

@@ -1,4 +1,4 @@
-package com.wurm.fetcher;
+package com.vritra.fetcher;
 
 import retrofit2.Retrofit;
 import okhttp3.OkHttpClient;

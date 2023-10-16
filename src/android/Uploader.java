@@ -1,10 +1,10 @@
-package com.wurm.fetcher;
+package com.vritra.fetcher;
 
-import com.wurm.fetcher.Fetcher;
-import com.wurm.fetcher.UploadAPI;
-import com.wurm.fetcher.UploaderClient;
-import com.wurm.fetcher.FileUtils;
-import com.wurm.fetcher.ProgressRequest;
+import com.vritra.fetcher.Fetcher;
+import com.vritra.fetcher.UploadAPI;
+import com.vritra.fetcher.UploaderClient;
+import com.vritra.fetcher.FileUtils;
+import com.vritra.fetcher.ProgressRequest;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
 import android.content.Context;
@@ -39,7 +39,7 @@ import retrofit2.Response;
 
 public class Uploader extends Worker implements ProgressRequest.UploadCallbacks {
 
-    static final String channelId="WurmUploadChannel";
+    static final String channelId="VritraUploadChannel";
     static Boolean channelCreated=false;
     protected static final NotificationManagerCompat manager=NotificationManagerCompat.from(Fetcher.context);
 

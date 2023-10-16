@@ -1,6 +1,6 @@
-package com.wurm.fetcher;
+package com.vritra.fetcher;
 
-import com.wurm.fetcher.Fetcher;
+import com.vritra.fetcher.Fetcher;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
 import org.json.JSONObject;

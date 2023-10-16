@@ -1,7 +1,7 @@
-package com.wurm.fetcher;
+package com.vritra.fetcher;
 
-import com.wurm.fetcher.Downloader;
-import com.wurm.fetcher.Uploader;
+import com.vritra.fetcher.Downloader;
+import com.vritra.fetcher.Uploader;
 import org.apache.cordova.*;
 import android.content.Context;
 import org.json.JSONArray;

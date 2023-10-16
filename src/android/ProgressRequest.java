@@ -1,4 +1,4 @@
-package com.wurm.fetcher;
+package com.vritra.fetcher;
 
 import okhttp3.RequestBody;
 import okhttp3.MediaType;

@@ -1,4 +1,4 @@
-package com.wurm.fetcher;
+package com.vritra.fetcher;
 
 import android.annotation.TargetApi;
 import android.content.ContentResolver;

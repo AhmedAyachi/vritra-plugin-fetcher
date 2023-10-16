@@ -1,18 +1,18 @@
 {
-  "name": "wurm-plugin-fetcher",
+  "name": "vritra-plugin-fetcher",
   "version": "0.0.1",
   "description": "A cordova plugin for file download/upload",
   "main": "www/index.js",
   "types": "index.d.ts",
     "cordova": {
-    "id": "wurm-plugin-fetcher",
+    "id": "vritra-plugin-fetcher",
     "platforms": [
       "android",
       "ios"
     ]
   },
   "keywords": [
-    "wurm-plugin-fetcher",
+    "vritra-plugin-fetcher",
     "fetcher","cordova",
     "download","upload","files"
   ],
