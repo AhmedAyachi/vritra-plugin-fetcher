@@ -1,7 +1,7 @@
 {
   "name": "vritra-plugin-fetcher",
-  "version": "0.0.1",
-  "description": "A cordova plugin for file download/upload",
+  "version": "1.0.0",
+  "description": "A cordova plugin for downloading/uploading files",
   "main": "www/index.js",
   "types": "index.d.ts",
     "cordova": {
@@ -12,10 +12,15 @@
     ]
   },
   "keywords": [
-    "vritra-plugin-fetcher",
-    "fetcher","cordova",
+    "cordova","plugin",
+    "vritra","fetcher",
     "download","upload","files"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AhmedAyachi/vritra-plugin-fetcher"
+  },
+  "homepage": "https://vritrajs.github.io/#cordovaplugins#fetcher",
   "author": "Ahmed Ayachi",
   "license": "MIT"
 }
