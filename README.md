@@ -8,6 +8,9 @@ After installing globally the cordova cli, execute:
 ```
 cordova plugin add vritra-plugin-fetcher
 ```
+
+>  \-\-force flag may be required if **vritra-plugin-webview** is present.
+
 You may need to manually install pods on ios. In that case, in your project root directory, execute:
 ```
 cd platforms/ios

@@ -14,7 +14,7 @@ import java.util.StringTokenizer;
 import java.util.Random;
 
 
-public class Fetcher extends CordovaPlugin {
+public class Fetcher extends VritraPlugin {
 
     static protected CordovaInterface cordova;
     static protected final JSONObject callbacks=new JSONObject();
