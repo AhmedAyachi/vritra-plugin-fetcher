@@ -1,35 +1,28 @@
 package com.vritra.fetcher;
 
-import com.vritra.fetcher.Downloader;
-import com.vritra.fetcher.Uploader;
+import com.vritra.common.*;
 import org.apache.cordova.*;
-import android.content.Context;
+import com.vritra.fetcher.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONException;
-import android.content.res.Resources;
-import java.util.Random;
 import androidx.work.WorkRequest;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
 import androidx.work.Data;
 import java.util.StringTokenizer;
+import java.util.Random;
 
 
 public class Fetcher extends CordovaPlugin {
 
-    static protected Context context;
     static protected CordovaInterface cordova;
-    static protected Resources resources;
-    static protected String packagename;
     static protected final JSONObject callbacks=new JSONObject();
 
     @Override
     public void initialize(CordovaInterface cordova,CordovaWebView webview){
+        super.initialize(cordova,webview);
         Fetcher.cordova=cordova;
-        Fetcher.context=cordova.getContext();
-        Fetcher.resources=Fetcher.context.getResources();
-        Fetcher.packagename=Fetcher.context.getPackageName();
     }
     @Override
     public boolean execute(String action,JSONArray args,CallbackContext callbackContext) throws JSONException{
@@ -70,24 +63,9 @@ public class Fetcher extends CordovaPlugin {
         }
     }
 
-    /* static String getAppName(){
-        String name=null;
-        try{
-            name=context.getApplicationInfo().loadLabel(context.getPackageManager()).toString();
-        }
-        catch(Exception exception){
-            name="AppName";
-        }
-        return name;
-    } */
-
     static String getExtension(String url){
         final int urlParamIndex=url.lastIndexOf("?");
         final int pointIndex=url.lastIndexOf(".");
         return urlParamIndex>pointIndex?url.substring(pointIndex+1,urlParamIndex):url.substring(pointIndex+1);
-    }
-    
-    static protected int getResourceId(String type,String name){
-        return resources.getIdentifier(name,type,Fetcher.packagename);
     }
 }

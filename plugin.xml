@@ -50,17 +50,10 @@
         <source-file src="src/ios/Uploader.swift"/>
         <source-file src="src/ios/Fetcher.swift"/>
         <podspec>
-            <config>
-                <source url="https://github.com/CocoaPods/Specs.git"/>
-            </config>
             <pods use-frameworks="true">
                 <pod name="Alamofire" spec="5.3.0"/>
             </pods>
         </podspec>
-        <dependency 
-            id="vritra-plugin-swift-support" 
-            url="https://github.com/AhmedAyachi/vritra-plugin-swift-support"
-        />
     </platform>
 
     <platform name="browser">
@@ -69,4 +62,8 @@
         </js-module>
     </platform>
 
+    <dependency 
+        id="vritra-plugin-common" 
+        url="https://github.com/AhmedAyachi/vritra-plugin-common"
+    />
 </plugin>

@@ -3,4 +3,15 @@
 A cordova plugin for uploading/downloading files on android/iOS.
 Defines a global **Fetcher** object.
 
+# Installation
+After installing globally the cordova cli, execute:
+```
+cordova plugin add vritra-plugin-fetcher
+```
+You may need to manually install pods on ios. In that case, in your project root directory, execute:
+```
+cd platforms/ios
+pod install 
+```
+and you should be ready to fetch !
 [See documentation](https://vritrajs.github.io/#cordovaplugins#fetcher)
