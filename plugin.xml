@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <plugin 
-    id="vritra-plugin-fetcher" version="1.0.1" 
+    id="vritra-plugin-fetcher" version="1.0.2" 
     xmlns="http://apache.org/cordova/ns/plugins/1.0" 
     xmlns:android="http://schemas.android.com/apk/res/android"
 >
@@ -27,7 +27,6 @@
         <source-file src="src/android/Uploader.java" target-dir="src/com/vritra/Fetcher"/>
         <source-file src="src/android/UploaderClient.java" target-dir="src/com/vritra/Fetcher"/>
         <source-file src="src/android/UploadAPI.java" target-dir="src/com/vritra/Fetcher"/>
-        <source-file src="src/android/FileUtils.java" target-dir="src/com/vritra/Fetcher"/>
         <source-file src="src/android/ProgressRequest.java" target-dir="src/com/vritra/Fetcher"/>
         <source-file src="src/android/Downloader.java" target-dir="src/com/vritra/Fetcher"/>
         <framework src="src/android/build.gradle" custom="true" type="gradleReference"/>

@@ -1,9 +1,9 @@
 package com.vritra.fetcher;
 
+import com.vritra.common.*;
 import com.vritra.fetcher.Fetcher;
 import com.vritra.fetcher.UploadAPI;
 import com.vritra.fetcher.UploaderClient;
-import com.vritra.fetcher.FileUtils;
 import com.vritra.fetcher.ProgressRequest;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
@@ -43,10 +43,11 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
     static Boolean channelCreated=false;
     protected static final NotificationManagerCompat manager=NotificationManagerCompat.from(Fetcher.context);
 
-    private JSONObject props,params=new JSONObject(),error=new JSONObject();
+    private JSONObject props,params=new JSONObject();
+    private VritraError error=new VritraError();
     private final JSONArray files=new JSONArray();
     private final JSONArray excluded=new JSONArray();
-    private CallbackContext callback;
+    private CallbackContext callbackContext;
     private NotificationCompat.Builder notifBuilder;
     private int index=-1,filecount=0;
     private Integer notificationId=null;
@@ -63,7 +64,7 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
         final String callbackRef=data.getString("callbackRef");
         if(callbackRef!=null){
             try{
-                this.callback=(CallbackContext)Fetcher.callbacks.opt(callbackRef);
+                this.callbackContext=(CallbackContext)Fetcher.callbacks.opt(callbackRef);
                 this.props=new JSONObject(data.getString("props"));
                 this.setFiles();
                 this.filecount=files.length();
@@ -78,32 +79,25 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
                 Fetcher.callbacks.remove(callbackRef);
             }
             catch(Exception exception){
-                try{
-                    error.put("message",exception.getMessage());
-                    callback.error(error);
-                }
-                catch(Exception e){}
+                callbackContext.error(new VritraError(exception));
             }
         }
         return Result.success();
     }
 
-    private void setFiles(){
+    private void setFiles() throws Exception {
         final JSONArray files=props.optJSONArray("files");
         final int length=files.length();
         for(int i=0;i<length;i++){
             final JSONObject fileProps=files.optJSONObject(i);
             final File file=new File(Uploader.getPath(fileProps.optString("path")));
-            try{
-                if(file.exists()){
-                    fileProps.put("file",file);
-                    this.files.put(fileProps);
-                }
-                else{
-                    this.excluded.put(fileProps);
-                }
+            if(file.exists()){
+                fileProps.put("file",file);
+                this.files.put(fileProps);
             }
-            catch(Exception exception){}
+            else{
+                this.excluded.put(fileProps);
+            }
         }
     }
 
@@ -115,52 +109,47 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
         call.enqueue(new Callback(){
             @Override
             public void onResponse(Call call,Response response){
-                if(response.isSuccessful()){
-                    final String toastmsg=props.optString("toast",null);
-                    if(toastmsg!=null){
-                        Fetcher.cordova.getActivity().runOnUiThread(new Runnable(){
-                            public void run(){
-                                Toast.makeText(Fetcher.context,toastmsg,Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    }
-                    if(notify){
-                        notifBuilder.setContentTitle(((filecount>1)?""+filecount+" Files":"File")+" uploaded successfully");
-                        notifBuilder.setContentText(null);
-                        notifBuilder.setProgress(100,100,false);
-                        notifBuilder.setOngoing(false);
-                        manager.notify(notificationId,notifBuilder.build());
-                    }
-                    try{
+                try{
+                    params.put("isFinished",true);
+                    if(response.isSuccessful()){
+                        final String toastmsg=props.optString("toast",null);
+                        if(toastmsg!=null){
+                            Fetcher.cordova.getActivity().runOnUiThread(new Runnable(){
+                                public void run(){
+                                    Toast.makeText(Fetcher.context,toastmsg,Toast.LENGTH_SHORT).show();
+                                }
+                            });
+                        }
+                        if(notify){
+                            notifBuilder.setContentTitle(((filecount>1)?""+filecount+" Files":"File")+" uploaded successfully");
+                            notifBuilder.setContentText(null);
+                            notifBuilder.setProgress(100,100,false);
+                            notifBuilder.setOngoing(false);
+                            manager.notify(notificationId,notifBuilder.build());
+                        }
                         params.put("progress",100);
-                        params.put("isFinished",true);
                         params.put("notificationId",notificationId);
                         params.put("response",getJSONObjectResponse(response));
                         params.put("excluded",excluded.length()>0?excluded:null);
-                        callback.success(params);
+                        callbackContext.success(params);
                         if(notify) manager.notify(notificationId,notifBuilder.build());
-                        
                     }
-                    catch(Exception exception){}
-                }
-                else{
-                    try{
+                    else{
                         if(notify) manager.cancel(notificationId.intValue());
-                        error.put("message","Unknown error");
-                        error.put("response",getJSONObjectResponse(response));
-                        callback.error(error);
+                        final VritraError error=new VritraError("Unknown error");
+                        error.set("response",getJSONObjectResponse(response));
+                        callbackContext.error(error);
                     }
-                    catch(Exception exception){}
+                }
+                catch(Exception exception){
+                    callbackContext.error(new VritraError(exception.getMessage()));
                 }
             }
             @Override
             public void onFailure(Call call,Throwable throwable){
-                try{
-                    if(notify) manager.cancel(notificationId.intValue());
-                    error.put("message",throwable.getMessage());
-                    callback.error(error);
-                }
-                catch(Exception e){}
+                if(notify) manager.cancel(notificationId.intValue());
+                error.set("message",throwable.getMessage());
+                callbackContext.error(error);
             }
         });
         if(this.notify){
@@ -246,7 +235,7 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
             catch(Exception exception){}
             final PluginResult result=new PluginResult(PluginResult.Status.OK,params);
             result.setKeepCallback(true);
-            callback.sendPluginResult(result);
+            callbackContext.sendPluginResult(result);
         }
     }
 
@@ -300,13 +289,9 @@ public class Uploader extends Worker implements ProgressRequest.UploadCallbacks 
     static private String getPath(String string){
         String path="";
         final String prefix="file:///";
-        if(string.startsWith(prefix)){
-            path=string;
-        }
-        else{
-            path=prefix+string;
-        }
-        path=FileUtils.getPath(Fetcher.context,Uri.parse(path));
+        if(string.startsWith(prefix)) path=string;
+        else path=prefix+string;
+        path=FileFinder.getUriPath(Fetcher.context,path);
         return path;
     }
 

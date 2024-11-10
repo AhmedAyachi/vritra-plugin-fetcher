@@ -1,5 +1,6 @@
 package com.vritra.fetcher;
 
+import com.vritra.common.*;
 import com.vritra.fetcher.Fetcher;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
@@ -48,7 +49,6 @@ public class Downloader extends Worker {
             }
             catch(Exception exception){}
         }
-
         return isFulfilled?Result.success():Result.failure();
     }
 
@@ -164,13 +164,9 @@ public class Downloader extends Worker {
     }
 
     private void onFail(Exception exception){
-        try{
-            this.downloadManager.remove();
-            final JSONObject error=new JSONObject();
-            error.put("message",exception.getMessage());
-            callback.error(error);
-        }
-        catch(Exception e){}
+        this.downloadManager.remove();
+        final VritraError error=new VritraError(exception);
+        callback.error(error);
     }
 
     String getLocationProp(JSONObject props){
