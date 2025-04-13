@@ -49,7 +49,7 @@ interface Fetcher {
         saveToUserGallery?:boolean,
         onProgress(data:FetcherDownloadData):void,
         onFail(error:{
-            message:String,
+            message:string,
         }):void,
     }):void;
     upload(options:{
@@ -61,11 +61,11 @@ interface Fetcher {
         /**
         * Headers object
         */
-        header?:Object,
+        header?:object,
         /**
         * The form-data fields
         */
-        body?:Object,
+        body?:object,
         /**
         * A string to use as a toast message when the upload is successful
         */
@@ -85,36 +85,36 @@ interface Fetcher {
         trackEachFile:boolean,
         onProgress(data:FetcherUploadData):void,
         onFail(error:{
-            message:String,
+            message:string,
             response?:FetcherResponse,
         }):void,
     }):void,
 }
 
 interface FetcherFile {
-    path:String,
+    path:string,
     /**
      * file key
      * @default `file${index}`
      */
-    key?:String,
+    key?:string,
     /**
     * the file mime type if you wish to specify it otherwise it's determined automatically.
     */
-    type?:String,
+    type?:string,
     /**
      * The uploaded file new base name (without extension).
      * Default to its original name.
      * @notice The string should not include the file extension
      */
-    withBaseName?:String,
+    withBaseName?:string,
 }
 
 type FetcherDownloadData=FetcherData&{
     /**
      * Downloaded file entry. Only set when the file has been downloaded. 
      */
-    entry?:{name:String,fullpath:String},
+    entry?:{name:string,fullpath:string},
 };
 
 type FetcherUploadData=FetcherData&{
@@ -132,7 +132,7 @@ type FetcherUploadData=FetcherData&{
      * Available when the request is finished and notify option is true
      * @notice to be dismised using vritra-plugin-notifier
      */
-    notificationId?:Number|null,
+    notificationId?:number,
 };
 
 interface FetcherData {
@@ -140,7 +140,7 @@ interface FetcherData {
     * The total progress percentage.
     * For upload method, the value is not affected by the value of trackEachFile property
     */
-    progress:Number,
+    progress:number,
     /**
     * A boolean value that indicates that the server finished dealing with this request.
     * Please do not used this property to verify that the upload request was successful.
@@ -154,16 +154,16 @@ interface FetcherResponse {
     /**
     * always an empty string on ios
     */
-    protocol:String,
-    code:Number,
+    protocol:string,
+    code:number,
     /**
     * Internal error message if any
     */
-    message:String,
+    message:string,
     /**
     * Same value as the url property
     */
-    url:String,
+    url:string,
     /**
     * Used to verify if the request was
     * actually successful. Sometimes the onProgress is called,
@@ -175,5 +175,5 @@ interface FetcherResponse {
     * Server actual response
     * A falsy value is passed if there is none
     */
-    body:any|Object,
+    body:any|object,
 }
